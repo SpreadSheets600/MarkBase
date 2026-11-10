@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../theme.dart';
+import '../theme_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -75,28 +76,30 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final muted = ShadTheme.of(context).colorScheme.mutedForeground;
+    final scheme = ShadTheme.of(context).colorScheme;
+    final dark = MarkBaseTheme.isDark(context);
+    final muted = scheme.mutedForeground;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFF08080B)),
-        ...MarkBaseTheme.aurora(size),
+        ColoredBox(color: scheme.background),
+        ...MarkBaseTheme.aurora(size, dark: dark),
         SafeArea(
           child: RefreshIndicator.adaptive(
             onRefresh: load,
-            color: MarkBaseTheme.violet,
-            backgroundColor: const Color(0xFF14141B),
+            color: scheme.primary,
+            backgroundColor: scheme.card,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 110),
               children: [
-                _header(muted),
+                _header(scheme),
                 const SizedBox(height: 18),
-                _searchField(),
+                _searchField(scheme),
                 if (phase == 'ok' && bookmarks.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  _stats(),
+                  _stats(scheme),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.only(left: 2, bottom: 10),
@@ -108,22 +111,22 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: .1,
-                            color: muted.withValues(alpha: .85),
+                            color: muted.withValues(alpha: .9),
                           ),
                         ),
                         const Spacer(),
                         Text(
                           '${folderCounts.length}',
-                          style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: muted.withValues(alpha: .6)),
+                          style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: muted.withValues(alpha: .7)),
                         ),
                       ],
                     ),
                   ),
-                  _filters(muted),
+                  _filters(scheme, dark),
                   const SizedBox(height: 6),
                 ],
                 const SizedBox(height: 8),
-                ..._body(muted),
+                ..._body(scheme),
               ],
             ),
           ),
@@ -134,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ---------------------------------------------------------------- header
 
-  Widget _header(Color muted) {
+  Widget _header(ShadColorScheme scheme) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -146,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8B5CF6).withValues(alpha: .40),
+                color: MarkBaseTheme.violet.withValues(alpha: .35),
                 blurRadius: 22,
                 offset: const Offset(0, 8),
               ),
@@ -173,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1.1,
-                  color: Colors.white,
+                  color: scheme.foreground,
                   height: 1.05,
                 ),
               ),
@@ -186,10 +189,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   'unconfigured' => 'connect your cloud',
                   _ => 'your bookmarks, everywhere',
                 },
-                style: GoogleFonts.inter(fontSize: 12.5, color: muted, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(fontSize: 12.5, color: scheme.mutedForeground, fontWeight: FontWeight.w500),
               ),
             ],
           ),
+        ),
+        ShadIconButton.ghost(
+          icon: Icon(
+            MarkBaseTheme.isDark(context) ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            size: 19,
+          ),
+          onPressed: () => themeController.toggle(ShadTheme.of(context).brightness),
         ),
         if (phase == 'ok')
           ShadIconButton.ghost(
@@ -200,12 +210,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _searchField() => ShadInput(
+  Widget _searchField(ShadColorScheme scheme) => ShadInput(
         controller: _search,
         placeholder: const Text('Search bookmarks…'),
-        leading: const Padding(
-          padding: EdgeInsets.only(right: 8),
-          child: Icon(Icons.search_rounded, size: 19, color: Color(0xFF9E9EA8)),
+        leading: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Icon(Icons.search_rounded, size: 19, color: scheme.mutedForeground),
         ),
         trailing: _search.text.isEmpty
             ? null
@@ -217,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
       );
 
-  Widget _stats() {
+  Widget _stats(ShadColorScheme scheme) {
     final domains = bookmarks.map((b) => b.host).toSet().length;
     final items = [
       ('${bookmarks.length}', 'bookmarks'),
@@ -240,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -.6,
-                      color: Colors.white,
+                      color: scheme.foreground,
                     ),
                   ),
                   const SizedBox(height: 1),
@@ -250,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
                       letterSpacing: .02,
-                      color: const Color(0xFF9E9EA8),
+                      color: scheme.mutedForeground,
                     ),
                   ),
                 ],
@@ -262,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _filters(Color muted) {
+  Widget _filters(ShadColorScheme scheme, bool dark) {
     final folders = [('All', '', bookmarks.length), ...folderCounts.entries.map((e) => (e.key, e.key, e.value))];
     return SizedBox(
       height: 112,
@@ -273,6 +283,13 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, i) {
           final (label, folder, count) = folders[i];
           final on = activeFolder == folder;
+          // Folder tiles stay dark-on-light in both themes? No — they follow
+          // the shell: graphite in dark mode, soft zinc in light mode.
+          final tile = dark
+              ? const [Color(0xFF3F3F46), Color(0xFF18181B)]
+              : const [Color(0xFFF0F0F4), Color(0xFFDFDFE6)];
+          final tab = dark ? const Color(0xFF52525B) : const Color(0xFFC9C9D3);
+          final tabOn = dark ? const Color(0xFFA78BFA) : const Color(0xFFC4B5FD);
           return GestureDetector(
             onTap: () => setState(() => activeFolder = on ? '' : folder),
             child: Column(
@@ -288,11 +305,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       end: Alignment.bottomRight,
                       colors: on
                           ? [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)]
-                          : [const Color(0xFF3F3F46), const Color(0xFF18181B)],
+                          : tile,
+                    ),
+                    border: Border.all(
+                      color: on
+                          ? Colors.transparent
+                          : (dark ? const Color(0xFF3A3A44) : const Color(0xFFD3D3DC)),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: on ? .30 : .22),
+                        color: Colors.black.withValues(alpha: dark ? (on ? .30 : .22) : .06),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -307,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 30,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: on ? const Color(0xFFA78BFA) : const Color(0xFF52525B),
+                            color: on ? tabOn : tab,
                             borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
                           ),
                         ),
@@ -316,6 +338,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text(
                           folder.isEmpty ? '📚' : _emojiFor(label),
                           style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                      Positioned(
+                        right: 7,
+                        bottom: 5,
+                        child: Text(
+                          '$count',
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: on
+                                ? Colors.white.withValues(alpha: .85)
+                                : scheme.mutedForeground,
+                          ),
                         ),
                       ),
                     ],
@@ -332,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: on ? FontWeight.w700 : FontWeight.w600,
-                      color: on ? Colors.white : muted,
+                      color: on ? scheme.foreground : scheme.mutedForeground,
                     ),
                   ),
                 ),
@@ -359,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ------------------------------------------------------------------ body
 
-  List<Widget> _body(Color muted) {
+  List<Widget> _body(ShadColorScheme scheme) {
     switch (phase) {
       case 'loading':
         return [for (var i = 0; i < 6; i++) const Padding(padding: EdgeInsets.only(bottom: 10), child: _SkeletonRow())];
@@ -371,9 +407,11 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 38, color: Color(0xFFF43F5E)),
+                Icon(Icons.cloud_off_rounded, size: 38, color: scheme.destructive),
                 const SizedBox(height: 12),
-                Text(errorText, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white70)),
+                Text(errorText,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(fontSize: 13.5, color: scheme.mutedForeground)),
                 const SizedBox(height: 16),
                 ShadButton(onPressed: load, child: const Text('Try again')),
               ],
@@ -391,10 +429,10 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.only(top: 40),
           child: Column(
             children: [
-              const Icon(Icons.search_off_rounded, size: 40, color: Color(0xFF52525B)),
+              Icon(Icons.search_off_rounded, size: 40, color: scheme.mutedForeground),
               const SizedBox(height: 10),
               Text('Nothing matches “${_search.text}”',
-                  style: GoogleFonts.inter(fontSize: 14, color: muted)),
+                  style: GoogleFonts.inter(fontSize: 14, color: scheme.mutedForeground)),
             ],
           ),
         )
@@ -430,6 +468,7 @@ class _BookmarkTileState extends State<BookmarkTile> {
   @override
   Widget build(BuildContext context) {
     final b = widget.bookmark;
+    final scheme = ShadTheme.of(context).colorScheme;
     final title = b.title.isNotEmpty ? b.title : b.host;
     return ShadCard(
       padding: const EdgeInsets.all(11),
@@ -443,15 +482,16 @@ class _BookmarkTileState extends State<BookmarkTile> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFF16161D),
+                color: scheme.muted,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF22222B)),
+                border: Border.all(color: scheme.border),
               ),
               padding: const EdgeInsets.all(9),
               child: Image.network(
-                'https://www.google.com/s2/favicons?sz=64&domain=${b.host}',
+                MarkBaseApi.faviconFor(b.host),
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Icon(Icons.language_rounded, size: 18, color: Color(0xFF71717A)),
+                errorBuilder: (_, _, _) =>
+                    Icon(Icons.language_rounded, size: 18, color: scheme.mutedForeground),
               ),
             ),
             const SizedBox(width: 12),
@@ -466,7 +506,7 @@ class _BookmarkTileState extends State<BookmarkTile> {
                     style: GoogleFonts.inter(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFFFAFAFA),
+                      color: scheme.foreground,
                       letterSpacing: -.2,
                     ),
                   ),
@@ -475,7 +515,7 @@ class _BookmarkTileState extends State<BookmarkTile> {
                     b.folder.isEmpty ? b.host : '${b.host}  ·  ${b.folder}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF8E8E99)),
+                    style: GoogleFonts.inter(fontSize: 11.5, color: scheme.mutedForeground),
                   ),
                 ],
               ),
@@ -484,8 +524,8 @@ class _BookmarkTileState extends State<BookmarkTile> {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 180),
               child: copied
-                  ? const Icon(Icons.check_rounded, key: ValueKey('ok'), size: 18, color: Color(0xFF34D399))
-                  : const Icon(Icons.north_east_rounded, key: ValueKey('go'), size: 15, color: Color(0xFF52525B)),
+                  ? const Icon(Icons.check_rounded, key: ValueKey('ok'), size: 18, color: Color(0xFF16A34A))
+                  : Icon(Icons.north_east_rounded, key: const ValueKey('go'), size: 15, color: scheme.mutedForeground),
             ),
           ],
         ),
@@ -499,19 +539,32 @@ class _SkeletonRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = ShadTheme.of(context).colorScheme;
+    Widget bar(double h, double w) => Container(
+          height: h,
+          width: w,
+          decoration: BoxDecoration(
+            color: scheme.muted,
+            borderRadius: BorderRadius.circular(h / 2),
+          ),
+        );
     return ShadCard(
       padding: const EdgeInsets.all(11),
       child: Row(
         children: [
-          Container(width: 42, height: 42, decoration: BoxDecoration(color: const Color(0xFF16161D), borderRadius: BorderRadius.circular(12))),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(color: scheme.muted, borderRadius: BorderRadius.circular(12)),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(height: 11, width: 160, decoration: BoxDecoration(color: const Color(0xFF1C1C24), borderRadius: BorderRadius.circular(6))),
+                bar(11, 160),
                 const SizedBox(height: 7),
-                Container(height: 9, width: 100, decoration: BoxDecoration(color: const Color(0xFF17171E), borderRadius: BorderRadius.circular(5))),
+                bar(9, 100),
               ],
             ),
           ),
@@ -528,6 +581,7 @@ class _UnconfiguredCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = ShadTheme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 26),
       child: ShadCard(
@@ -541,7 +595,7 @@ class _UnconfiguredCard extends StatelessWidget {
                 gradient: MarkBaseTheme.brand,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: .35), blurRadius: 26, offset: const Offset(0, 8)),
+                  BoxShadow(color: MarkBaseTheme.violet.withValues(alpha: .35), blurRadius: 26, offset: const Offset(0, 8)),
                 ],
               ),
               alignment: Alignment.center,
@@ -549,13 +603,14 @@ class _UnconfiguredCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text('Welcome to MarkBase',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -.5)),
+                style: GoogleFonts.inter(
+                    fontSize: 18, fontWeight: FontWeight.w700, color: scheme.foreground, letterSpacing: -.5)),
             const SizedBox(height: 7),
             Text(
               'Point the app at your Cloudflare API and paste the sync token. '
               'Your bookmarks will follow you to every device.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: const Color(0xFF9E9EA8)),
+              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: scheme.mutedForeground),
             ),
             const SizedBox(height: 20),
             ShadButton(
@@ -577,21 +632,23 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = ShadTheme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(top: 40),
       child: ShadCard(
         padding: const EdgeInsets.all(26),
         child: Column(
           children: [
-            const Icon(Icons.bookmark_border_rounded, size: 42, color: Color(0xFF71717A)),
+            Icon(Icons.bookmark_border_rounded, size: 42, color: scheme.mutedForeground),
             const SizedBox(height: 12),
             Text('No bookmarks yet',
-                style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -.4)),
+                style: GoogleFonts.inter(
+                    fontSize: 17, fontWeight: FontWeight.w700, color: scheme.foreground, letterSpacing: -.4)),
             const SizedBox(height: 6),
             Text(
               'Add bookmarks in your browser — the extension pushes them here within seconds.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: const Color(0xFF9E9EA8)),
+              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: scheme.mutedForeground),
             ),
             const SizedBox(height: 18),
             ShadButton.outline(

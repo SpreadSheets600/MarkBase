@@ -14,8 +14,9 @@ Everything that isn't /v1/* is served as a static asset (the PWA dashboard).
 import hmac
 import json
 import time
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
+import js
 from pyodide.ffi import to_js
 from workers import Response, WorkerEntrypoint
 
@@ -67,6 +68,11 @@ class Default(WorkerEntrypoint):
 
             if path in ("/health", "/v1/health") and method == "GET":
                 return json_response({"ok": True, "service": "markbase", "time": now_iso()})
+
+            # Public, token-free favicon proxy: CanvasKit cannot decode a
+            # cross-origin image without CORS, so the app asks us instead.
+            if path == "/v1/favicon" and method in ("GET", "HEAD"):
+                return await self.handle_favicon(request)
 
             if not path.startswith("/v1"):
                 # PWA dashboard / static assets (with a small SPA-ish tweak for
@@ -147,6 +153,28 @@ class Default(WorkerEntrypoint):
     async def handle_wipe(self):
         await self.env.DB.prepare("DELETE FROM bookmarks").run()
         return json_response({"ok": True, "wiped": True})
+
+    async def handle_favicon(self, request):
+        domain = (parse_qs(urlparse(request.url).query).get("domain") or [""])[0].strip().lower()
+        if not domain or len(domain) > 253 or not all(c.isalnum() or c in ".-_" for c in domain):
+            return Response("bad domain", status=400)
+        try:
+            upstream = await js.fetch(f"https://www.google.com/s2/favicons?sz=64&domain={domain}")
+        except Exception:
+            return Response("upstream unavailable", status=502)
+        if not getattr(upstream, "ok", False):
+            return Response("upstream error", status=502)
+        body = await upstream.arrayBuffer()
+        content_type = upstream.headers.get("content-type") or "image/png"
+        return Response(
+            body,
+            status=200,
+            headers={
+                "content-type": content_type,
+                "cache-control": "public, max-age=86400",
+                "access-control-allow-origin": "*",
+            },
+        )
 
 
 # ---------------------------------------------------------------- helpers

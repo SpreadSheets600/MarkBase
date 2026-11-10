@@ -26,6 +26,15 @@ class Bookmark {
 class MarkBaseApi {
   static const _kEndpoint = 'endpoint', _kToken = 'token';
 
+  /// Last endpoint we talked to, so widgets can build same-origin URLs
+  /// (the favicon proxy) without awaiting storage in `build`.
+  static String endpointBase = 'https://markbase-api.spreadsheets600.workers.dev';
+
+  /// CanvasKit can't decode a cross-origin icon without CORS, so icons go
+  /// through our own Worker proxy.
+  static String faviconFor(String host) =>
+      '${endpointBase.replaceAll(RegExp(r'/+$'), '')}/v1/favicon?domain=${Uri.encodeComponent(host)}';
+
   Future<String?> endpoint() async =>
       (await SharedPreferences.getInstance()).getString(_kEndpoint);
   Future<String?> token() async =>
@@ -33,8 +42,10 @@ class MarkBaseApi {
 
   Future<void> save({required String endpoint, required String token}) async {
     final p = await SharedPreferences.getInstance();
-    await p.setString(_kEndpoint, endpoint.trim().replaceAll(RegExp(r'/+$'), ''));
+    final clean = endpoint.trim().replaceAll(RegExp(r'/+$'), '');
+    await p.setString(_kEndpoint, clean);
     await p.setString(_kToken, token.trim());
+    if (clean.isNotEmpty) endpointBase = clean;
   }
 
   bool _configured(String? e, String? t) =>
@@ -53,6 +64,7 @@ class MarkBaseApi {
     final p = await SharedPreferences.getInstance();
     final e = p.getString(_kEndpoint), t = p.getString(_kToken);
     if (!_configured(e, t)) throw const ApiException('Not configured — add your URL and token first.');
+    if (e != null && e.isNotEmpty) endpointBase = e;
     try {
       final r = await http
           .get(

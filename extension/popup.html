@@ -6,6 +6,7 @@
   <title>MarkBase</title>
   <link rel="stylesheet" href="pico.min.css" />
   <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
 </head>
 <body>
   <main class="popup">
@@ -16,13 +17,19 @@
         <h1>MarkBase</h1>
         <p>Auto-sync</p>
       </div>
-      <button class="ghost-btn" id="openDash" title="Open dashboard">Dashboard</button>
+      <button class="icon-btn theme-btn" id="themeBtn" title="Toggle light and dark" aria-label="Toggle light and dark">
+        <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <button class="ghost-btn" id="openDash" title="Open the MarkBase dashboard">Dashboard</button>
     </header>
+
+    <div class="fatal" id="fatal" hidden></div>
 
     <!-- tabs -->
     <nav class="tabs" role="tablist">
-      <button class="tab active" id="tabSync" role="tab">Auto-sync</button>
-      <button class="tab" id="tabLib" role="tab">Library <span id="libCount">0</span></button>
+      <button class="tab active" id="tabSync" role="tab" aria-selected="true">Auto-sync</button>
+      <button class="tab" id="tabLib" role="tab" aria-selected="false">Library <span id="libCount">0</span></button>
     </nav>
 
     <!-- ------------------------------------------------------- sync panel -->
@@ -30,7 +37,7 @@
       <div class="status-card">
         <div class="status-line">
           <span class="pulse" id="pulse"></span>
-          <strong id="statusText">…</strong>
+          <strong id="statusText">Idle</strong>
           <span class="status-last" id="lastText">—</span>
         </div>
         <div class="status-sub"><span id="countText">0</span> bookmarks synced to your cloud</div>
@@ -85,6 +92,12 @@
         <a href="#" id="openLib2">Open full library</a>
       </footer>
     </section>
+
+    <noscript>
+      <div class="panel">
+        <div class="fatal">JavaScript is disabled, so the popup can't sync. Enable it for this extension and reopen the popup.</div>
+      </div>
+    </noscript>
   </main>
   <script src="popup.js"></script>
 </body>

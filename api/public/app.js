@@ -46,8 +46,9 @@ function inFolder(b, folder) {
 }
 function filtered() {
   const q = state.query.trim().toLowerCase();
+  // A search always looks across the whole library, not just the open folder.
   let list = state.bookmarks;
-  if (state.view === "folder") list = list.filter((b) => inFolder(b, state.folder));
+  if (!q && state.view === "folder") list = list.filter((b) => inFolder(b, state.folder));
   if (q) list = list.filter((b) =>
     (b.title || "").toLowerCase().includes(q) ||
     (b.url || "").toLowerCase().includes(q) ||
@@ -263,21 +264,11 @@ function menu(anchor, items) {
   const r = anchor.getBoundingClientRect();
   const el = document.createElement("div");
   el.className = "mr-menu";
-  Object.assign(el.style, {
-    position: "fixed", top: `${r.bottom + 6}px`, left: `${Math.min(r.left, window.innerWidth - 190)}px`,
-    background: "#fff", border: "1px solid var(--line)", borderRadius: "10px",
-    boxShadow: "0 16px 40px -16px rgba(16,16,20,.3)", padding: "4px", zIndex: 90, minWidth: "180px",
-  });
+  el.style.top = `${r.bottom + 6}px`;
+  el.style.left = `${Math.min(r.left, window.innerWidth - 190)}px`;
   items.forEach(([label, fn]) => {
     const b = document.createElement("button");
     b.textContent = label;
-    Object.assign(b.style, {
-      display: "block", width: "100%", textAlign: "left", padding: "8px 10px",
-      border: "0", background: "transparent", borderRadius: "7px", fontSize: "12.5px",
-      color: "#3f3f46", cursor: "pointer",
-    });
-    b.onmouseenter = () => (b.style.background = "#f4f4f5");
-    b.onmouseleave = () => (b.style.background = "transparent");
     b.onclick = () => { el.remove(); fn(); };
     el.appendChild(b);
   });
@@ -446,6 +437,39 @@ menuBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M3 12h
 document.querySelector(".hist").prepend(menuBtn);
 menuBtn.onclick = () => $("sidebar").classList.toggle("open");
 $("content").addEventListener("click", (e) => { if (e.target.closest(".folder-tile")) $("sidebar").classList.remove("open"); });
+
+/* ------------------------------------------------------------------ theme */
+const themeBtn = $("themeBtn");
+// Older engines (and jsdom) may not implement matchMedia — never let that
+// stop the rest of the dashboard from booting.
+const systemDark =
+  typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+const systemPrefersDark = () => !!(systemDark && systemDark.matches);
+
+function applyTheme(theme, persist = false) {
+  document.documentElement.dataset.theme = theme;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", theme === "dark" ? "#0a0a0d" : "#fbfbfc");
+  if (persist) localStorage.setItem("mb_theme", theme);
+}
+
+if (themeBtn) {
+  themeBtn.onclick = () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(next, true);
+    themeBtn.blur();
+    toast(next === "dark" ? "Dark mode on" : "Light mode on");
+  };
+}
+
+// Follow the OS only while the user hasn't picked a side.
+if (systemDark && systemDark.addEventListener) {
+  systemDark.addEventListener("change", (e) => {
+    if (!localStorage.getItem("mb_theme")) applyTheme(e.matches ? "dark" : "light");
+  });
+}
+
+applyTheme(document.documentElement.dataset.theme || (systemPrefersDark() ? "dark" : "light"));
 
 /* ------------------------------------------------------------------ boot */
 renderSidebar();

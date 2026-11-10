@@ -14,6 +14,7 @@ EOF
 
 node --check extension/background.js && echo "✓ background.js syntax OK"
 node --check extension/popup.js && echo "✓ popup.js syntax OK"
+node --check extension/theme.js && echo "✓ theme.js syntax OK"
 
 mkdir -p dist
 rm -f dist/markbase-extension-v*.zip

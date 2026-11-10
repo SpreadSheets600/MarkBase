@@ -5,9 +5,9 @@ Your bookmarks, everywhere. A tiny, free, stateless sync stack:
 | Piece | Tech | Where |
 |---|---|---|
 | **API** | Python Worker (Pyodide on the edge) + D1 SQLite | Cloudflare — `api/` |
-| **Extension** | Chrome/Brave/Edge MV3 watcher · Pico.css popup (tabs, folder filters) | `extension/` |
-| **Phone app** | Flutter · **shadcn_ui** components · aurora theme | `app/` |
-| **Dashboard** | Auroum-style library shell · **Bootstrap 5** | `api/public/` |
+| **Extension** | Chrome/Brave/Edge MV3 watcher · Pico.css popup (tabs, folder filters, dark mode) | `extension/` |
+| **Phone app** | Flutter · **shadcn_ui** components · light + dark aurora themes | `app/` |
+| **Dashboard** | Auroum-style library shell · **Bootstrap 5** · light + dark | `api/public/` |
 | **Hosted app** | the Flutter web build, also on the Worker | `/app` |
 
 ```
@@ -48,6 +48,7 @@ Browser bookmarks ──(auto, bearer token)──▶ Python Worker ──▶ D1
 | `POST /v1/sync` | bearer | Bulk upsert + diff-soft-delete (`{ "bookmarks": [...] }`) |
 | `GET /v1/bookmarks` | bearer | Live list |
 | `DELETE /v1/bookmarks` | bearer | Wipe all |
+| `GET /v1/favicon?domain=…` | — | CORS-safe favicon proxy (needed by the Flutter web build) |
 | `GET /health` | — | probe |
 
 ## Local development
@@ -66,6 +67,21 @@ Deploy new changes: `npx wrangler deploy`
 2. **Load unpacked** → select `markbase/extension/`
 3. Open the popup → paste the Worker URL + sync token → Save
 4. It syncs immediately; afterwards it's fully automatic.
+
+If the toolbar icon ever refuses to open the popup, the same panel is always
+reachable from `chrome://extensions` → **MarkBase Sync** → *Details* →
+**Extension options**.
+
+## Themes
+
+One palette across all three surfaces — zinc neutrals with a violet accent,
+light and dark:
+
+- **Dashboard** — sun/moon button in the top bar (remembers `mb_theme`, follows
+  the OS until you pick a side).
+- **Extension popup** — same toggle in the header (remembers `mb_theme`).
+- **Flutter app** — header toggle, plus System / Light / Dark in Settings
+  (persisted with `shared_preferences`).
 
 ## Build / run the phone app
 
