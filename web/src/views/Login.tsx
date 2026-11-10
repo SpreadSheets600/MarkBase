@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { KeyRound, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { startGoogleSignIn } from "@/lib/auth";
 import { Aurora } from "@/components/reactbits/aurora";
 import { BlurText } from "@/components/reactbits/blur-text";
@@ -9,8 +8,6 @@ import { BlurFade } from "@/components/magic/blur-fade";
 import { DotPattern } from "@/components/magic/dot-pattern";
 import { ShimmerButton } from "@/components/magic/shimmer-button";
 import { Marquee } from "@/components/magic/marquee";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 
 const Google = () => (
@@ -50,17 +47,7 @@ const SITES = [
   "dribbble.com",
 ];
 
-export function Login({
-  busy,
-  error,
-  onToken,
-}: {
-  busy: boolean;
-  error: string;
-  onToken: (t: string) => void;
-}) {
-  const [token, setToken] = useState("");
-  const [showToken, setShowToken] = useState(false);
+export function Login({ busy, error }: { busy: boolean; error: string }) {
   return (
     <main className="relative grid min-h-full place-items-center overflow-hidden px-4 py-10">
       <Aurora />
@@ -87,46 +74,6 @@ export function Login({
               {busy ? <Loader2 className="size-4 animate-spin" /> : <Google />}
               {busy ? "Signing you in…" : "Continue with Google"}
             </ShimmerButton>
-
-            <div className="my-6 flex items-center gap-3 text-[11px] uppercase tracking-widest text-subtle">
-              <span className="h-px flex-1 bg-line" />
-              or
-              <span className="h-px flex-1 bg-line" />
-            </div>
-
-            {showToken ? (
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (token.trim()) onToken(token);
-                }}
-              >
-                <Input
-                  autoFocus
-                  type="password"
-                  placeholder="mb_sync_…"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  aria-label="Sync token"
-                />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={!token.trim()}
-                >
-                  Connect
-                </Button>
-              </form>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowToken(true)}
-              >
-                <KeyRound /> Use a sync token
-              </Button>
-            )}
 
             {error && (
               <p

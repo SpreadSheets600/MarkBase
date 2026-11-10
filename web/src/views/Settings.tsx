@@ -1,13 +1,12 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Download, LogOut, Settings as Icon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { api, exportHtml, parseBookmarksHtml } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { setPrefs, usePrefs } from "@/lib/prefs";
-import { getToken } from "@/lib/auth";
+import { startGoogleSignIn } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PageHeader } from "./Header";
 
 const Card = ({
@@ -60,10 +59,9 @@ const Seg = ({
 );
 
 export function Settings() {
-  const { session, bookmarks, logout, reload, saveToken } = useStore();
+  const { session, bookmarks, logout, reload } = useStore();
   const prefs = usePrefs();
   const file = useRef<HTMLInputElement>(null);
-  const [token, setToken] = useState(getToken());
   const google = !!session?.email;
 
   const onFile = async (f?: File) => {
@@ -164,40 +162,28 @@ export function Settings() {
       </Card>
       <Card title="Account">
         {google ? (
-          <Row title={session!.name} body={`Signed in as ${session!.email}`}>
+          <Row
+            title={session!.name}
+            body={`Signed in with Google as ${session!.email}`}
+          >
             <Button variant="outline" size="sm" onClick={logout}>
               <LogOut />
               Log out
             </Button>
           </Row>
         ) : (
-          <div className="space-y-3 p-4">
-            <p className="text-sm font-medium">Sync token</p>
-            <Input
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="mb_sync_…"
-              className="font-mono text-[13px]"
-            />
-            <div className="flex gap-2">
-              <Button
-                variant="accent"
-                size="sm"
-                disabled={!token.trim()}
-                onClick={() => {
-                  saveToken(token);
-                  toast.success("Token saved");
-                }}
-              >
-                Save
-              </Button>
-              <Button variant="outline" size="sm" onClick={logout}>
-                <LogOut />
-                Log out
-              </Button>
-            </div>
-          </div>
+          <Row
+            title="Google Account"
+            body="Connect your Google account to sync bookmarks across devices."
+          >
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={() => startGoogleSignIn()}
+            >
+              Sign in with Google
+            </Button>
+          </Row>
         )}
       </Card>
     </div>

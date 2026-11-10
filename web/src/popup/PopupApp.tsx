@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
   Bookmark,
-  Check,
   Clock,
   ExternalLink,
-  Eye,
-  EyeOff,
   Folder,
   Globe,
   Loader2,
+  LogOut,
   Moon,
   RefreshCw,
   Search,
   Settings as SettingsIcon,
   Sun,
-  Trash2,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
@@ -50,6 +47,27 @@ interface SyncStatus {
 
 const DEFAULT_ENDPOINT = "https://markbase-api.spreadsheets600.workers.dev";
 
+const GoogleIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden>
+    <path
+      fill="#4285F4"
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.56c2.08-1.92 3.28-4.74 3.28-8.1z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.07H2.18a11 11 0 0 0 0 9.86l3.66-2.84z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.6 10.6 0 0 0 12 1 11 11 0 0 0 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+    />
+  </svg>
+);
+
 export function PopupApp() {
   const [tab, setTab] = useState<"sync" | "library" | "settings">("sync");
   const [cfg, setCfg] = useState<ExtensionConfig>({
@@ -72,11 +90,9 @@ export function PopupApp() {
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [showToken, setShowToken] = useState(false);
-  const [tokenInput, setTokenInput] = useState("");
-  const [endpointInput, setEndpointInput] = useState(DEFAULT_ENDPOINT);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const isSignedIn = !!cfg.googleSession?.user;
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
@@ -108,8 +124,6 @@ export function PopupApp() {
             googleSession: res.googleSession || null,
           };
           setCfg(loadedCfg);
-          setEndpointInput(loadedCfg.endpoint);
-          setTokenInput(loadedCfg.token);
           setStatus(res.status || {});
           if (Array.isArray(res.libCache)) setItems(res.libCache);
         },
@@ -134,6 +148,25 @@ export function PopupApp() {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    if (typeof chrome !== "undefined" && chrome.tabs) {
+      chrome.tabs.create({ url: `${cfg.endpoint}/` });
+    } else {
+      window.open(cfg.endpoint, "_blank");
+    }
+  };
+
+  const handleSignOut = () => {
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      chrome.storage.local.remove(["googleSession", "token"], () => {
+        setCfg((prev) => ({ ...prev, googleSession: null, token: "" }));
+        setStatus({});
+      });
+    } else {
+      setCfg((prev) => ({ ...prev, googleSession: null, token: "" }));
     }
   };
 
@@ -197,29 +230,6 @@ export function PopupApp() {
     }
   };
 
-  const handleSaveSettings = () => {
-    const cleanEndpoint = endpointInput.trim().replace(/\/+$/, "");
-    const cleanToken = tokenInput.trim();
-    const updated = { ...cfg, endpoint: cleanEndpoint, token: cleanToken };
-    setCfg(updated);
-    if (typeof chrome !== "undefined" && chrome.storage?.local) {
-      chrome.storage.local.set(
-        {
-          endpoint: cleanEndpoint,
-          token: cleanToken,
-          autosync: cfg.autosync,
-          smartHistory: cfg.smartHistory,
-          dwellSeconds: cfg.dwellSeconds,
-        },
-        () => {
-          setSavedSuccess(true);
-          setTimeout(() => setSavedSuccess(false), 2000);
-          handleSyncNow();
-        },
-      );
-    }
-  };
-
   const filteredItems = items.filter((b) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -244,7 +254,7 @@ export function PopupApp() {
             className={`size-2 rounded-full transition-colors ${
               syncing
                 ? "bg-accent animate-pulse"
-                : status.phase === "ok"
+                : isSignedIn && status.phase === "ok"
                   ? "bg-emerald-500"
                   : "bg-muted"
             }`}
@@ -253,8 +263,8 @@ export function PopupApp() {
         <div className="flex items-center gap-1">
           <button
             onClick={handleSyncNow}
-            disabled={syncing}
-            className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition-colors"
+            disabled={syncing || !isSignedIn}
+            className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition-colors disabled:opacity-40"
             title="Instant 2-way sync"
           >
             <RefreshCw
@@ -316,7 +326,7 @@ export function PopupApp() {
           }`}
         >
           <SettingsIcon className="size-3.5" />
-          <span>Setup</span>
+          <span>Account</span>
         </button>
       </nav>
 
@@ -418,53 +428,79 @@ export function PopupApp() {
               </section>
             )}
 
-            <section className="bg-surface rounded-xl border border-line p-3 space-y-3">
-              <div className="flex items-center justify-between">
+            {!isSignedIn ? (
+              <section className="bg-surface rounded-xl border border-line p-4 space-y-3 text-center">
+                <div className="size-10 rounded-full bg-accent/15 border border-accent/20 flex items-center justify-center mx-auto text-accent">
+                  <GoogleIcon />
+                </div>
                 <div>
                   <h4 className="text-xs font-semibold text-fg">
-                    {cfg.token ? "Two-Way Sync Active" : "Setup Required"}
+                    Google Sign-In Required
                   </h4>
-                  <p className="text-[11px] text-muted">
-                    {status.at
-                      ? `Last sync ${new Date(status.at).toLocaleTimeString()}`
-                      : "Syncs with your browser bar"}
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    Sign in with your Google account to automatically sync your
+                    bookmarks and history.
                   </p>
                 </div>
-                <span className="text-xs font-mono font-medium text-accent-soft bg-accent/15 px-2 py-0.5 rounded-md">
-                  {status.count ?? items.length} synced
-                </span>
-              </div>
+                <button
+                  onClick={handleGoogleSignIn}
+                  className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-accent hover:bg-accent/90 text-white transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <GoogleIcon />
+                  <span>Sign in with Google</span>
+                </button>
+              </section>
+            ) : (
+              <section className="bg-surface rounded-xl border border-line p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold text-fg">
+                      Two-Way Sync Active
+                    </h4>
+                    <p className="text-[11px] text-muted">
+                      {status.at
+                        ? `Last sync ${new Date(status.at).toLocaleTimeString()}`
+                        : "Syncs with your browser bar"}
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono font-medium text-accent-soft bg-accent/15 px-2 py-0.5 rounded-md">
+                    {status.count ?? items.length} synced
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between pt-1 border-t border-line/60">
-                <span className="text-xs text-muted">Auto-sync on changes</span>
-                <input
-                  type="checkbox"
-                  checked={cfg.autosync}
-                  onChange={(e) => {
-                    const next = e.target.checked;
-                    setCfg({ ...cfg, autosync: next });
-                    if (
-                      typeof chrome !== "undefined" &&
-                      chrome.storage?.local
-                    ) {
-                      chrome.storage.local.set({ autosync: next });
-                    }
-                  }}
-                  className="rounded border-line bg-elevated text-accent focus:ring-accent"
-                />
-              </div>
+                <div className="flex items-center justify-between pt-1 border-t border-line/60">
+                  <span className="text-xs text-muted">
+                    Auto-sync on changes
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={cfg.autosync}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setCfg({ ...cfg, autosync: next });
+                      if (
+                        typeof chrome !== "undefined" &&
+                        chrome.storage?.local
+                      ) {
+                        chrome.storage.local.set({ autosync: next });
+                      }
+                    }}
+                    className="rounded border-line bg-elevated text-accent focus:ring-accent"
+                  />
+                </div>
 
-              <button
-                onClick={handleSyncNow}
-                disabled={syncing}
-                className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-accent hover:bg-accent/90 text-white transition-colors flex items-center justify-center gap-2 shadow-xs"
-              >
-                <RefreshCw
-                  className={`size-3.5 ${syncing ? "animate-spin" : ""}`}
-                />
-                <span>{syncing ? "Syncing bookmarks..." : "Sync now"}</span>
-              </button>
-            </section>
+                <button
+                  onClick={handleSyncNow}
+                  disabled={syncing}
+                  className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-accent hover:bg-accent/90 text-white transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <RefreshCw
+                    className={`size-3.5 ${syncing ? "animate-spin" : ""}`}
+                  />
+                  <span>{syncing ? "Syncing bookmarks..." : "Sync now"}</span>
+                </button>
+              </section>
+            )}
           </>
         )}
 
@@ -515,87 +551,87 @@ export function PopupApp() {
 
         {tab === "settings" && (
           <div className="space-y-3">
-            {cfg.googleSession?.user && (
-              <div className="flex items-center gap-3 p-3 bg-surface border border-line rounded-xl">
-                {cfg.googleSession.user.picture ? (
-                  <img
-                    src={cfg.googleSession.user.picture}
-                    alt=""
-                    className="size-9 rounded-full"
-                  />
-                ) : (
-                  <div className="size-9 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm">
-                    {cfg.googleSession.user.name?.[0] || "U"}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-fg truncate">
-                    {cfg.googleSession.user.name}
-                  </div>
-                  <div className="text-[11px] text-muted truncate">
-                    {cfg.googleSession.user.email}
+            {isSignedIn && cfg.googleSession?.user ? (
+              <div className="bg-surface border border-line rounded-xl p-3.5 space-y-3">
+                <div className="flex items-center gap-3">
+                  {cfg.googleSession.user.picture ? (
+                    <img
+                      src={cfg.googleSession.user.picture}
+                      alt=""
+                      className="size-10 rounded-full border border-line object-cover"
+                    />
+                  ) : (
+                    <div className="size-10 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm">
+                      {cfg.googleSession.user.name?.[0] || "U"}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-fg truncate">
+                      {cfg.googleSession.user.name}
+                    </div>
+                    <div className="text-[11px] text-muted truncate">
+                      {cfg.googleSession.user.email}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium mt-0.5">
+                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                      <span>Connected with Google</span>
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={handleSignOut}
+                  className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-elevated hover:bg-line text-muted hover:text-fg border border-line transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-surface border border-line rounded-xl p-4 text-center space-y-3">
+                <div className="size-12 rounded-2xl bg-elevated border border-line flex items-center justify-center mx-auto shadow-xs">
+                  <GoogleIcon />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-fg">
+                    Google Account
+                  </h4>
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    Sign in with Google to sync your bookmarks and history
+                    automatically.
+                  </p>
+                </div>
+                <button
+                  onClick={handleGoogleSignIn}
+                  className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-accent hover:bg-accent/90 text-white transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <GoogleIcon />
+                  <span>Sign in with Google</span>
+                </button>
               </div>
             )}
 
-            <div className="bg-surface border border-line rounded-xl p-3 space-y-3">
-              <h4 className="text-xs font-semibold text-fg">API Connection</h4>
-
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted font-medium">
-                  Dashboard URL
-                </label>
+            <div className="bg-surface border border-line rounded-xl p-3 space-y-2">
+              <h4 className="text-xs font-semibold text-fg">Preferences</h4>
+              <div className="flex items-center justify-between text-xs py-1">
+                <span className="text-muted">Smart History</span>
                 <input
-                  type="url"
-                  value={endpointInput}
-                  onChange={(e) => setEndpointInput(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-elevated border border-line rounded-lg text-xs text-fg focus:border-accent outline-none"
+                  type="checkbox"
+                  checked={cfg.smartHistory}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setCfg({ ...cfg, smartHistory: next });
+                    if (
+                      typeof chrome !== "undefined" &&
+                      chrome.storage?.local
+                    ) {
+                      chrome.storage.local.set({ smartHistory: next });
+                    }
+                  }}
+                  className="rounded border-line bg-elevated text-accent focus:ring-accent"
                 />
               </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] text-muted font-medium">
-                  Sync Token
-                </label>
-                <div className="relative">
-                  <input
-                    type={showToken ? "text" : "password"}
-                    value={tokenInput}
-                    onChange={(e) => setTokenInput(e.target.value)}
-                    placeholder="mb_sync_..."
-                    className="w-full px-2.5 py-1.5 pr-8 bg-elevated border border-line rounded-lg text-xs text-fg focus:border-accent outline-none font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowToken(!showToken)}
-                    className="absolute right-2 top-2 text-muted hover:text-fg"
-                  >
-                    {showToken ? (
-                      <EyeOff className="size-3.5" />
-                    ) : (
-                      <Eye className="size-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSaveSettings}
-                className="w-full py-2 px-3 rounded-lg text-xs font-medium bg-accent hover:bg-accent/90 text-white transition-colors shadow-xs flex items-center justify-center gap-1.5"
-              >
-                {savedSuccess ? <Check className="size-3.5" /> : null}
-                <span>
-                  {savedSuccess ? "Saved & Connected!" : "Save & Connect"}
-                </span>
-              </button>
-            </div>
-
-            <div className="bg-surface border border-line rounded-xl p-3 space-y-2">
-              <h4 className="text-xs font-semibold text-fg">
-                Smart History &amp; Dwell
-              </h4>
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-xs py-1 border-t border-line/60">
                 <span className="text-muted">Reading dwell time</span>
                 <select
                   value={cfg.dwellSeconds}

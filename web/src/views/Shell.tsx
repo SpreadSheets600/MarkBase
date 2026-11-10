@@ -225,7 +225,7 @@ function ShellInner() {
           )}
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-[13px] font-medium">
-              {session?.name || "Sync token"}
+              {session?.name || "Google Account"}
             </p>
             <p className="truncate text-[11px] text-subtle">
               {session?.email || "Connected"}

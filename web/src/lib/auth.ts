@@ -166,8 +166,6 @@ export async function completeGoogleLogin(
   saveSession(session);
   return {
     session,
-    message: session.token
-      ? undefined
-      : error || `Signed in as ${email}. Add your sync token to finish.`,
+    message: session.token ? undefined : error || `Signed in as ${email}.`,
   };
 }
