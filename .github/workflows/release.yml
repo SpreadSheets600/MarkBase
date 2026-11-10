@@ -50,13 +50,24 @@ jobs:
 
       - name: Package Flutter Web
         run: |
-          cd app/build/web && zip -r ../../../dist/markbase-flutter-web.zip . && cd ../../..
+          python3 - <<'EOF'
+          import os, zipfile
+          out = "dist/markbase-flutter-web.zip"
+          src = "app/build/web"
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk(src):
+                  for f in files:
+                      p = os.path.join(root, f)
+                      z.write(p, os.path.relpath(p, src))
+          print(f"Created {out}")
+          EOF
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/*.zip
+            dist/*.apk
             app/build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true
         env:

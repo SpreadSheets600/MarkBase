@@ -60,16 +60,15 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install capture dependencies
-        working-directory: capture
-        run: npm ci
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Check extension script syntax
+      - name: Install dependencies
         run: |
-          node --check extension/background.js
-          node --check extension/popup.js
-          node --check extension/dwell.js
-          node --check extension/session-bridge.js
+          cd web && npm ci
+          cd ../capture && npm ci
 
       - name: Build extension package
         run: bash scripts/build_extension.sh
