@@ -530,7 +530,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .trim()
       .replace(/\/+$/, "");
     const patch = {};
-    if (googleSession) patch.googleSession = googleSession;
+    if (googleSession) {
+      const u = googleSession.user || googleSession;
+      patch.googleSession = {
+        name: u.name || "User",
+        email: u.email || "",
+        picture: u.picture || "",
+        token: t,
+        user: {
+          name: u.name || "User",
+          email: u.email || "",
+          picture: u.picture || "",
+        },
+      };
+    }
     if (t) patch.token = t;
     if (e) patch.endpoint = e;
     if (Object.keys(patch).length) {

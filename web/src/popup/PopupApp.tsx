@@ -23,19 +23,20 @@ interface BookmarkItem {
   description?: string;
 }
 
+interface ExtensionUser {
+  name?: string;
+  email?: string;
+  picture?: string;
+}
+
 interface ExtensionConfig {
   endpoint: string;
   token: string;
   autosync: boolean;
   smartHistory: boolean;
   dwellSeconds: number;
-  googleSession: {
-    user?: {
-      name?: string;
-      email?: string;
-      picture?: string;
-    };
-  } | null;
+  googleSession:
+    (ExtensionUser & { user?: ExtensionUser; token?: string }) | null;
 }
 
 interface SyncStatus {
@@ -92,42 +93,69 @@ export function PopupApp() {
   const [capturing, setCapturing] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
-  const isSignedIn = !!cfg.googleSession?.user;
+  const sessionUser: ExtensionUser | null =
+    cfg.googleSession?.user ||
+    (cfg.googleSession?.email ? cfg.googleSession : null) ||
+    (cfg.token ? { name: "MarkBase User", email: "Connected" } : null);
+
+  const isSignedIn = !!(sessionUser?.email || cfg.token);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setTheme(isDark ? "dark" : "light");
 
     if (typeof chrome !== "undefined" && chrome.storage?.local) {
-      chrome.storage.local.get(
-        [
-          "endpoint",
-          "token",
-          "autosync",
-          "smartHistory",
-          "dwellSeconds",
-          "googleSession",
-          "status",
-          "libCache",
-        ],
-        (rawRes) => {
-          const res = rawRes as Record<string, any>;
-          const loadedCfg: ExtensionConfig = {
-            endpoint:
-              typeof res.endpoint === "string"
-                ? res.endpoint
-                : DEFAULT_ENDPOINT,
-            token: typeof res.token === "string" ? res.token : "",
-            autosync: res.autosync !== false,
-            smartHistory: res.smartHistory !== false,
-            dwellSeconds: Number(res.dwellSeconds) || 10,
-            googleSession: res.googleSession || null,
-          };
-          setCfg(loadedCfg);
-          setStatus(res.status || {});
-          if (Array.isArray(res.libCache)) setItems(res.libCache);
-        },
-      );
+      const loadConfig = () => {
+        chrome.storage.local.get(
+          [
+            "endpoint",
+            "token",
+            "autosync",
+            "smartHistory",
+            "dwellSeconds",
+            "googleSession",
+            "status",
+            "libCache",
+          ],
+          (rawRes) => {
+            const res = (rawRes || {}) as Record<string, any>;
+            const loadedCfg: ExtensionConfig = {
+              endpoint:
+                typeof res.endpoint === "string"
+                  ? res.endpoint
+                  : DEFAULT_ENDPOINT,
+              token: typeof res.token === "string" ? res.token : "",
+              autosync: res.autosync !== false,
+              smartHistory: res.smartHistory !== false,
+              dwellSeconds: Number(res.dwellSeconds) || 10,
+              googleSession: res.googleSession || null,
+            };
+            setCfg(loadedCfg);
+            if (res.status) setStatus(res.status);
+            if (Array.isArray(res.libCache)) setItems(res.libCache);
+          },
+        );
+      };
+
+      loadConfig();
+
+      const onStorageChange = (
+        changes: { [key: string]: chrome.storage.StorageChange },
+        areaName: string,
+      ) => {
+        if (areaName !== "local") return;
+        if (
+          changes.googleSession ||
+          changes.token ||
+          changes.status ||
+          changes.libCache ||
+          changes.endpoint
+        ) {
+          loadConfig();
+        }
+      };
+
+      chrome.storage.onChanged?.addListener(onStorageChange);
 
       chrome.tabs?.query({ active: true, currentWindow: true }, (tabs) => {
         const cur = tabs[0];
@@ -138,6 +166,10 @@ export function PopupApp() {
           });
         }
       });
+
+      return () => {
+        chrome.storage.onChanged?.removeListener(onStorageChange);
+      };
     }
   }, []);
 
@@ -152,10 +184,11 @@ export function PopupApp() {
   };
 
   const handleGoogleSignIn = () => {
+    const targetUrl = `${cfg.endpoint.replace(/\/+$/, "")}/?auth=google`;
     if (typeof chrome !== "undefined" && chrome.tabs) {
-      chrome.tabs.create({ url: `${cfg.endpoint}/` });
+      chrome.tabs.create({ url: targetUrl });
     } else {
-      window.open(cfg.endpoint, "_blank");
+      window.open(targetUrl, "_blank");
     }
   };
 
@@ -551,26 +584,26 @@ export function PopupApp() {
 
         {tab === "settings" && (
           <div className="space-y-3">
-            {isSignedIn && cfg.googleSession?.user ? (
+            {isSignedIn ? (
               <div className="bg-surface border border-line rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center gap-3">
-                  {cfg.googleSession.user.picture ? (
+                  {sessionUser?.picture ? (
                     <img
-                      src={cfg.googleSession.user.picture}
+                      src={sessionUser.picture}
                       alt=""
                       className="size-10 rounded-full border border-line object-cover"
                     />
                   ) : (
                     <div className="size-10 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-sm">
-                      {cfg.googleSession.user.name?.[0] || "U"}
+                      {sessionUser?.name?.[0] || "U"}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-semibold text-fg truncate">
-                      {cfg.googleSession.user.name}
+                      {sessionUser?.name || "Connected"}
                     </div>
                     <div className="text-[11px] text-muted truncate">
-                      {cfg.googleSession.user.email}
+                      {sessionUser?.email || "Account connected"}
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium mt-0.5">
                       <span className="size-1.5 rounded-full bg-emerald-500" />

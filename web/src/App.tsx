@@ -5,8 +5,10 @@ import {
   getSession,
   getToken,
   onPopupToken,
+  saveSession,
   saveToken,
   signOut,
+  startGoogleSignIn,
   type Session,
 } from "@/lib/auth";
 import { AuthError, api } from "@/lib/api";
@@ -69,6 +71,26 @@ export function App({ redirectToken }: { redirectToken?: string }) {
   useEffect(() => {
     if (token) verify(token);
   }, [token, verify]);
+
+  useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    if (q.get("auth") === "google") {
+      history.replaceState(null, "", location.pathname);
+      const s = getSession();
+      if (s) {
+        saveSession(s);
+        toast.success(`Extension connected as ${s.email}`);
+      } else {
+        startGoogleSignIn();
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (appReturn && !token && !busy) {
+      startGoogleSignIn();
+    }
+  }, [appReturn, token, busy]);
 
   useEffect(() => {
     if (!appReturn || !token) return;

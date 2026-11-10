@@ -10,6 +10,11 @@ export type Session = {
   email: string;
   picture: string;
   token: string;
+  user?: {
+    name: string;
+    email: string;
+    picture: string;
+  };
 };
 
 const parse = <T>(s: string | null): T | null => {
@@ -157,11 +162,18 @@ export async function completeGoogleLogin(
 
   const email = profile?.email || serverUser?.email || "";
   if (!email) return { message: error || "Google sign-in failed. Try again." };
+  const name = profile?.name || serverUser?.name || "You";
+  const picture = profile?.picture || serverUser?.picture || "";
   const session: Session = {
-    name: profile?.name || serverUser?.name || "You",
+    name,
     email,
-    picture: profile?.picture || serverUser?.picture || "",
+    picture,
     token: serverToken || getToken(),
+    user: {
+      name,
+      email,
+      picture,
+    },
   };
   saveSession(session);
   return {
