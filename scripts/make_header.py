@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate MarkBase README header image (SVG + PNG)."""
+"""Generate MarkBase README header image (SVG + PNG) with logo, name, and description."""
 
 import subprocess
 from pathlib import Path
@@ -13,18 +13,12 @@ PNG_PATH = ASSETS / "header.png"
 
 # Dimensions
 WIDTH = 1280
-HEIGHT = 440
-
-# Single object bookmark path inside 110x110 squircle
-# Original 512 canvas coordinates: ribbon is M 178 126 H 334 A 24 24 0 0 1 358 150 V 382 L 256 322 L 154 382 V 150 A 24 24 0 0 1 178 126 Z
-# Center squircle at (640, 130), size 108x108 -> squircle rect from x=586, y=76, w=108, h=108, rx=28
-# Scale 512 to 108: factor = 108 / 512 = 0.2109375
-# Translated to (586, 76)
+HEIGHT = 340
 
 svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" width="{WIDTH}" height="{HEIGHT}">
   <defs>
     <!-- Background glow -->
-    <radialGradient id="glow" cx="50%" cy="25%" r="55%">
+    <radialGradient id="glow" cx="50%" cy="30%" r="60%">
       <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.22"/>
       <stop offset="60%" stop-color="#4f46e5" stop-opacity="0.05"/>
       <stop offset="100%" stop-color="#09090b" stop-opacity="0"/>
@@ -50,7 +44,7 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {
     .title {{
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-weight: 700;
-      font-size: 54px;
+      font-size: 52px;
       letter-spacing: -0.03em;
       fill: #ffffff;
       text-anchor: middle;
@@ -63,14 +57,6 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {
       fill: #a1a1aa;
       text-anchor: middle;
     }}
-    .pill-text {{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-weight: 500;
-      font-size: 13px;
-      fill: #d4d4d8;
-      text-anchor: start;
-      dominant-baseline: central;
-    }}
   </style>
 
   <!-- Canvas background -->
@@ -78,8 +64,8 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {
   <rect width="{WIDTH}" height="{HEIGHT}" rx="16" fill="url(#glow)"/>
   <rect x="0.5" y="0.5" width="{WIDTH - 1}" height="{HEIGHT - 1}" rx="15.5" fill="none" stroke="#27272a" stroke-width="1"/>
 
-  <!-- Logo Mark centered at X=640, Y=64 -->
-  <g transform="translate(586, 62)" filter="url(#logoShadow)">
+  <!-- Logo Mark centered at X=640, Y=48 -->
+  <g transform="translate(586, 48)" filter="url(#logoShadow)">
     <!-- Squircle container 108x108 -->
     <rect width="108" height="108" rx="28" fill="url(#logoGrad)"/>
     <rect width="108" height="108" rx="28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
@@ -91,39 +77,8 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {
   </g>
 
   <!-- Typography -->
-  <text x="640" y="236" class="title">MarkBase</text>
-  <text x="640" y="280" class="subtitle">Your bookmarks and reading history, everywhere.</text>
-
-  <!-- Surface tags / pill badges -->
-  <g transform="translate(640, 342)">
-    <!-- Pill 1: Cloudflare Edge -->
-    <g transform="translate(-350, 0)">
-      <rect x="-95" y="-16" width="190" height="32" rx="16" fill="#18181b" stroke="#27272a"/>
-      <circle cx="-75" cy="0" r="4.5" fill="#8b5cf6"/>
-      <text x="-60" y="0" class="pill-text">Cloudflare Edge &amp; D1</text>
-    </g>
-
-    <!-- Pill 2: Chrome Extension -->
-    <g transform="translate(-115, 0)">
-      <rect x="-95" y="-16" width="190" height="32" rx="16" fill="#18181b" stroke="#27272a"/>
-      <circle cx="-75" cy="0" r="4.5" fill="#10b981"/>
-      <text x="-60" y="0" class="pill-text">Chrome Extension MV3</text>
-    </g>
-
-    <!-- Pill 3: React Dashboard -->
-    <g transform="translate(115, 0)">
-      <rect x="-85" y="-16" width="170" height="32" rx="16" fill="#18181b" stroke="#27272a"/>
-      <circle cx="-65" cy="0" r="4.5" fill="#38bdf8"/>
-      <text x="-50" y="0" class="pill-text">React 19 Dashboard</text>
-    </g>
-
-    <!-- Pill 4: Flutter Cross-Platform -->
-    <g transform="translate(345, 0)">
-      <rect x="-105" y="-16" width="210" height="32" rx="16" fill="#18181b" stroke="#27272a"/>
-      <circle cx="-85" cy="0" r="4.5" fill="#f59e0b"/>
-      <text x="-70" y="0" class="pill-text">Flutter Mobile &amp; Desktop</text>
-    </g>
-  </g>
+  <text x="640" y="222" class="title">MarkBase</text>
+  <text x="640" y="264" class="subtitle">Your bookmarks and reading history, everywhere.</text>
 </svg>
 """
 
