@@ -4,7 +4,6 @@ import { consumeOAuthReturn } from "@/lib/auth";
 import { App } from "./App";
 import "./index.css";
 
-// Must run before React: a popup returning from Google hands off and closes itself.
 const ret = consumeOAuthReturn();
 
 createRoot(document.getElementById("root")!).render(

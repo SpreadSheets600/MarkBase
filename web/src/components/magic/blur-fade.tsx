@@ -1,8 +1,17 @@
-// Magic UI - Blur Fade
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 
-export function BlurFade({ children, delay = 0, y = 8, className }: { children: ReactNode; delay?: number; y?: number; className?: string }) {
+export function BlurFade({
+  children,
+  delay = 0,
+  y = 8,
+  className,
+}: {
+  children: ReactNode;
+  delay?: number;
+  y?: number;
+  className?: string;
+}) {
   return (
     <motion.div
       className={className}
