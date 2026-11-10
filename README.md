@@ -1,3 +1,5 @@
+![MarkBase](assets/header.png)
+
 # MarkBase
 
 > **Your bookmarks and reading history, everywhere.**  
@@ -9,21 +11,13 @@
 
 MarkBase is structured as four unified surfaces that stay in continuous two-way sync:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Cloudflare Edge                        │
-│  Python Worker (Pyodide) + D1 SQLite + Full-Text Search     │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│ Chrome Extension │  │  Web Dashboard   │  │ Cross-Platform   │
-│  (Manifest V3)   │  │ (React 19, Vite) │  │  (Flutter Mobile │
-│ Instant 2-way    │  │ Command Palette  │  │   & Desktop)     │
-│ Smart History    │  │ Google Auth      │  │ Shadcn design    │
-│ Page extractor   │  │ Markdown Reader  │  │ Offline-first    │
-└──────────────────┘  └──────────────────┘  └──────────────────┘
+```mermaid
+flowchart TD
+    EDGE["Cloudflare Edge\nPython Worker (Pyodide) + D1 SQLite + Full-Text Search"]
+
+    EDGE <-->|"Two-way sync & history"| EXT["Chrome Extension (Manifest V3)\nInstant 2-way sync\nSmart History & dwell detection\nIn-browser page extractor"]
+    EDGE <-->|"REST API & Google Auth"| WEB["Web Dashboard (React 19, Vite)\nCommand Palette (Cmd+K)\nGoogle Auth session bridge\nMarkdown reader & library"]
+    EDGE <-->|"REST API & offline cache"| APP["Cross-Platform App (Flutter)\nShadcn design system\nOffline-first SQLite\nAndroid, iOS & Desktop"]
 ```
 
 | Component | Technology | Directory |
