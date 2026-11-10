@@ -3,6 +3,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+echo "Building React extension UI..."
+(cd web && npm run build:extension)
+
 python3 - <<'EOF'
 import json
 m = json.load(open("extension/manifest.json"))
@@ -13,8 +16,9 @@ print("✓ manifest valid -", m["name"], "v" + m["version"])
 EOF
 
 node --check extension/background.js && echo "✓ background.js syntax OK"
-node --check extension/popup.js && echo "✓ popup.js syntax OK"
 node --check extension/dwell.js && echo "✓ dwell.js syntax OK"
+node --check extension/session-bridge.js && echo "✓ session-bridge.js syntax OK"
+node --check extension/assets/popup.js && echo "✓ popup.js syntax OK"
 
 [[ -d capture/node_modules ]] || (cd capture && npm ci --silent)
 (cd capture && node build.mjs)
@@ -43,7 +47,8 @@ except Exception:
             for f in files:
                 p = os.path.join(root, f)
                 z.write(p, os.path.relpath(p, "extension"))
-print(f"Packed: {out} ({os.path.getsize(out)//1024} KB) - upload as-is to the Chrome Web Store or load extension/ unpacked.")
 EOF
 
-echo "Extension Build Complete : $PWD/$OUT"
+SIZE=$(du -h "$OUT" | cut -f1)
+echo "✅ Packed: $OUT ($SIZE) - upload as-is to the Chrome Web Store or load extension/ unpacked."
+echo "📦 Extension build complete → $(pwd)/$OUT"
