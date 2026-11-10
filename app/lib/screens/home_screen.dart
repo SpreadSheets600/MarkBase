@@ -15,7 +15,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final _api = MarkBaseApi();
   final _search = TextEditingController();
 
-  static const _phases = {'idle', 'loading', 'ok', 'error', 'unconfigured'};
   String phase = 'idle';
   String errorText = '';
   List<Bookmark> bookmarks = [];
@@ -78,13 +77,13 @@ class _HomeScreenState extends State<HomeScreen> {
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _header(),
-                  SliverToBoxAdapter(child: _searchBar()),
+                  _header,
+                  SliverToBoxAdapter(child: _searchBar),
                   if (phase == 'ok' && bookmarks.isNotEmpty) ...[
-                    SliverToBoxAdapter(child: _folderChips()),
-                    _list(),
+                    SliverToBoxAdapter(child: _folderChips),
+                    _list,
                   ],
-                  SliverToBoxAdapter(child: _stateArea()),
+                  SliverToBoxAdapter(child: _stateArea),
                   const SliverToBoxAdapter(child: SizedBox(height: 60)),
                 ],
               ),
@@ -258,7 +257,7 @@ class BookmarkTile extends StatelessWidget {
                   child: Image.network(
                     'https://www.google.com/s2/favicons?sz=64&domain=${bookmark.host}',
                     width: 26, height: 26, fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.language_rounded, size: 22, color: Colors.white54),
+                    errorBuilder: (_, _, _) => const Icon(Icons.language_rounded, size: 22, color: Colors.white54),
                   ),
                 ),
               ),

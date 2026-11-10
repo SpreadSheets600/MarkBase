@@ -74,11 +74,11 @@ abstract final class MarkBaseTheme {
 
   /// Soft aurora blobs to paint inside a Stack, behind content.
   static List<Widget> aurora(Size size) => [
-        _blob(size * .9, const Offset(-size.width * .3, -size.height * .18),
+        _blob(size.width * .9, Offset(-size.width * .3, -size.height * .18),
             const Color(0xFF6366F1), .34),
-        _blob(size * .8, Offset(size.width * .55, size.height * .28),
+        _blob(size.width * .8, Offset(size.width * .55, size.height * .28),
             const Color(0xFFA855F7), .30),
-        _blob(size * .7, Offset(size.width * .1, size.height * 1.05),
+        _blob(size.width * .7, Offset(size.width * .1, size.height * 1.05),
             const Color(0xFFEC4899), .28),
       ];
 

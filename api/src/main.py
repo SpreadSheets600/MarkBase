@@ -69,7 +69,10 @@ class Default(WorkerEntrypoint):
                 return json_response({"ok": True, "service": "markbase", "time": now_iso()})
 
             if not path.startswith("/v1"):
-                # PWA dashboard / static assets
+                # PWA dashboard / static assets (with a small SPA-ish tweak for
+                # the hosted Flutter web app that lives under /app).
+                if path in ("/app", "/app/"):
+                    return await self.env.ASSETS.fetch("/app/main")
                 return await self.env.ASSETS.fetch(request)
 
             # -- auth for everything under /v1 -----------------------------

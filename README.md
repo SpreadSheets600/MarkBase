@@ -8,6 +8,7 @@ Your bookmarks, everywhere. A tiny, free, stateless sync stack:
 | **Extension** | Chrome/Brave/Edge MV3 watcher, Pico.css popup | `extension/` |
 | **Phone app** | Flutter · Material 3 · aurora glass theme | `app/` |
 | **Dashboard** | PWA served by the same Worker (Bootstrap 5) | `api/public/` |
+| **Hosted app** | the Flutter web build, also on the Worker | `/app` |
 
 ```
 Browser bookmarks ──(auto, bearer token)──▶ Python Worker ──▶ D1
@@ -18,8 +19,18 @@ Browser bookmarks ──(auto, bearer token)──▶ Python Worker ──▶ D1
 ## Live setup (already done)
 
 - Worker URL: `https://markbase-api.spreadsheets600.workers.dev`
+- Flutter web app: same URL at `/app`
 - D1 database: `markbase-db`
 - Sync token: `api/.env` (**never commit it** — same token goes in the extension + app)
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `scripts/setup.sh` | first-time setup: login check → D1 schema → token → deploy |
+| `scripts/deploy.sh` | push API/dashboard changes to Cloudflare |
+| `scripts/build_extension.sh` | validate + zip the extension → `dist/*.zip` |
+| `scripts/build_app.sh --install-on-worker` | build Flutter web + redeploy to `/app` |
 
 ## How sync works
 
