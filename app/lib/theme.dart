@@ -1,85 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 
-/// MarkBase visual language — Material 3, dark, violet aurora.
+/// MarkBase visual language — shadcn (zinc + violet) with a soft aurora.
 abstract final class MarkBaseTheme {
-  static const seed = Color(0xFF7C6AF0);
-  static const _grad = [Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899)];
+  static const violet = Color(0xFF8B5CF6);
 
-  static ThemeData dark() {
-    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.dark);
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+  /// A custom zinc/violet shadcn scheme tuned for MarkBase.
+  static const scheme = ShadColorScheme(
+    background: Color(0xFF08080B),
+    foreground: Color(0xFFFAFAFA),
+    card: Color(0xFF0D0D12),
+    cardForeground: Color(0xFFFAFAFA),
+    popover: Color(0xFF0D0D12),
+    popoverForeground: Color(0xFFFAFAFA),
+    primary: Color(0xFF8B5CF6),
+    primaryForeground: Color(0xFFFAFAFA),
+    secondary: Color(0xFF1C1C24),
+    secondaryForeground: Color(0xFFFAFAFA),
+    muted: Color(0xFF1C1C24),
+    mutedForeground: Color(0xFF9E9EA8),
+    accent: Color(0xFF241A3D),
+    accentForeground: Color(0xFFFAFAFA),
+    destructive: Color(0xFFF43F5E),
+    destructiveForeground: Color(0xFFFAFAFA),
+    border: Color(0xFF22222B),
+    input: Color(0xFF22222B),
+    ring: Color(0xFF8B5CF6),
+    selection: Color(0xFF8B5CF6),
+  );
 
-    return base.copyWith(
-      textTheme: GoogleFonts.interTextTheme(base.textTheme).copyWith(
-        displayLarge: GoogleFonts.sora(
-          fontSize: 30,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -1.2,
-          color: Colors.white,
+  static ShadThemeData dark() => ShadThemeData(
+        brightness: Brightness.dark,
+        colorScheme: scheme,
+        radius: const BorderRadius.all(Radius.circular(18)),
+        textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
+        primaryButtonTheme: const ShadButtonTheme(
+          height: 44,
+          backgroundColor: Color(0xFF8B5CF6),
+          hoverBackgroundColor: Color(0xFF9F7AEA),
         ),
-        titleLarge: GoogleFonts.sora(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
+        outlineButtonTheme: const ShadButtonTheme(
+          height: 40,
+          backgroundColor: Color(0xFF0D0D12),
+          hoverBackgroundColor: Color(0xFF1C1C24),
         ),
-      ),
-      scaffoldBackgroundColor: const Color(0xFF0B0B14),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white.withValues(alpha: .05),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Colors.white.withValues(alpha: .09)),
+        cardTheme: const ShadCardTheme(padding: EdgeInsets.all(14)),
+        inputTheme: const ShadInputTheme(
+          padding: EdgeInsets.symmetric(horizontal: 14),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      ),
-      chipTheme: base.chipTheme.copyWith(
-        shape: const StadiumBorder(side: BorderSide(color: Colors.white12)),
-        backgroundColor: Colors.white.withValues(alpha: .06),
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: .07),
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: .35)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFA855F7), width: 1.6),
-        ),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1C1B2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
-  }
+      );
 
-  /// The brand gradient — use with a ShaderMask or as a decoration.
+  /// The brand gradient — used for the logo and a few highlights.
   static LinearGradient get brand => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: _grad,
+        colors: [Color(0xFF6366F1), Color(0xFFA855F7), Color(0xFFEC4899)],
       );
 
-  /// Soft aurora blobs to paint inside a Stack, behind content.
+  /// Soft aurora blobs painted behind the content.
   static List<Widget> aurora(Size size) => [
-        _blob(size.width * .9, Offset(-size.width * .3, -size.height * .18),
-            const Color(0xFF6366F1), .34),
-        _blob(size.width * .8, Offset(size.width * .55, size.height * .28),
-            const Color(0xFFA855F7), .30),
-        _blob(size.width * .7, Offset(size.width * .1, size.height * 1.05),
-            const Color(0xFFEC4899), .28),
+        _blob(size.width * 1.0, Offset(-size.width * .4, -size.height * .12),
+            const Color(0xFF6D28D9), .30),
+        _blob(size.width * .9, Offset(size.width * .55, size.height * .22),
+            const Color(0xFF7C3AED), .20),
+        _blob(size.width * .8, Offset(size.width * .05, size.height * 1.02),
+            const Color(0xFFDB2777), .14),
       ];
 
   static Widget _blob(double d, Offset at, Color color, double opacity) {

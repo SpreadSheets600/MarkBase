@@ -55,8 +55,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 /* ---------------------------------------------------------------- sync */
 
 async function getConfig() {
-  const { endpoint = "", token = "" } = await chrome.storage.local.get(["endpoint", "token"]);
-  return { endpoint: (endpoint || "").trim().replace(/\/+$/, ""), token: (token || "").trim() };
+  const {
+    endpoint = "",
+    token = "",
+    ignoredFolders = [],
+    autosync = true,
+  } = await chrome.storage.local.get(["endpoint", "token", "ignoredFolders", "autosync"]);
+  return {
+    endpoint: (endpoint || "").trim().replace(/\/+$/, ""),
+    token: (token || "").trim(),
+    ignoredFolders: Array.isArray(ignoredFolders) ? ignoredFolders : [],
+    autosync: autosync !== false,
+  };
 }
 
 async function setStatus(patch) {
@@ -72,18 +82,21 @@ async function setStatus(patch) {
 }
 
 async function snapshot() {
+  const { ignoredFolders } = await getConfig();
   const tree = await chrome.bookmarks.getTree();
   const out = [];
   const walk = (nodes, folderParts) => {
     for (const node of nodes) {
       if (node.url) {
         if (/^place:/i.test(node.url)) continue; // chrome-internal placeholder
+        const folder = folderParts.join(" / ");
+        if (ignoredFolders.some((ig) => folder === ig || folder.startsWith(ig + " / "))) continue;
         out.push({
           id: String(node.id),
           parent_id: String(node.parentId || ""),
           title: node.title || "",
           url: node.url,
-          folder_path: folderParts.join(" / "),
+          folder_path: folder,
           sort_index: typeof node.index === "number" ? node.index : 0,
           date_added: Math.round(node.dateAdded || 0),
         });
@@ -99,9 +112,13 @@ async function snapshot() {
 }
 
 async function syncNow(reason = "manual") {
-  const { endpoint, token } = await getConfig();
+  const { endpoint, token, autosync } = await getConfig();
   if (!endpoint || !token) {
     await setStatus({ phase: "unconfigured", reason, error: "Set your MarkBase URL and token in the popup." });
+    return;
+  }
+  if (!autosync && reason !== "manual") {
+    await setStatus({ phase: "paused", reason });
     return;
   }
   try {

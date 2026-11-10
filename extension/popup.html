@@ -1,55 +1,90 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MarkBase Sync</title>
+  <title>MarkBase</title>
   <link rel="stylesheet" href="pico.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="popup">
+    <!-- brand -->
     <header class="brand">
       <span class="logo">M</span>
-      <div>
+      <div class="grow">
         <h1>MarkBase</h1>
-        <p>live bookmark sync</p>
+        <p>Auto-sync</p>
       </div>
-      <span id="pulse" class="pulse" title="status"></span>
+      <button class="ghost-btn" id="openDash" title="Open dashboard">Dashboard</button>
     </header>
 
-    <section class="status-card" id="statusCard">
-      <div class="row">
-        <span class="label">Status</span>
-        <strong id="statusText">…</strong>
+    <!-- tabs -->
+    <nav class="tabs" role="tablist">
+      <button class="tab active" id="tabSync" role="tab">Auto-sync</button>
+      <button class="tab" id="tabLib" role="tab">Library <span id="libCount">0</span></button>
+    </nav>
+
+    <!-- ------------------------------------------------------- sync panel -->
+    <section id="panelSync" class="panel">
+      <div class="status-card">
+        <div class="status-line">
+          <span class="pulse" id="pulse"></span>
+          <strong id="statusText">…</strong>
+          <span class="status-last" id="lastText">—</span>
+        </div>
+        <div class="status-sub"><span id="countText">0</span> bookmarks synced to your cloud</div>
+        <p id="errorText" class="error" hidden></p>
       </div>
-      <div class="row">
-        <span class="label">Bookmarks synced</span>
-        <strong id="countText">—</strong>
+
+      <div class="card">
+        <div class="card-title">Folders to sync</div>
+        <div id="folderList" class="folder-list"><div class="loading-line">Reading your bookmarks…</div></div>
+        <p class="hint">Unticked folders stay out of the cloud and off your phone.</p>
       </div>
-      <div class="row">
-        <span class="label">Last sync</span>
-        <strong id="lastText">—</strong>
-      </div>
-      <p id="errorText" class="error" hidden></p>
+
+      <label class="switch-row" for="autosync">
+        <span>
+          <strong>Keep in sync automatically</strong>
+          <em>Watch for changes in the background</em>
+        </span>
+        <input type="checkbox" id="autosync" role="switch" checked />
+      </label>
+
+      <button class="primary-btn" id="syncNow">Sync now</button>
+
+      <details class="conn">
+        <summary>Connection</summary>
+        <label for="endpoint">API URL</label>
+        <input id="endpoint" type="url" placeholder="https://markbase-api.you.workers.dev" autocomplete="off" spellcheck="false" />
+        <label for="token">Sync token</label>
+        <input id="token" type="password" placeholder="mb_sync_…" autocomplete="off" />
+        <button class="ghost-btn wide" id="save">Save</button>
+        <p id="saveMsg" class="saved" hidden>Saved — verifying…</p>
+      </details>
+
+      <footer class="foot">
+        <a href="#" id="openLib">Open library</a><span class="dot">·</span><a href="#" id="openHome">MarkBase home</a>
+      </footer>
     </section>
 
-    <button id="syncNow" class="primary full">Sync now</button>
-    <button id="openDash" class="outline full secondary">Open dashboard ↗</button>
-
-    <details class="settings">
-      <summary>⚙️ Settings</summary>
-      <label for="endpoint">MarkBase API URL</label>
-      <input id="endpoint" type="url" placeholder="https://markbase-api.<you>.workers.dev" autocomplete="off" spellcheck="false" />
-      <label for="token">Sync token</label>
-      <input id="token" type="password" placeholder="paste your SYNC_TOKEN" autocomplete="off" />
-      <button id="save" class="primary full">Save</button>
-      <p id="saveMsg" class="ok-msg" hidden>Saved ✓</p>
-    </details>
-
-    <footer>
-      <span id="apiHint" class="hint"></span>
-    </footer>
+    <!-- ---------------------------------------------------- library panel -->
+    <section id="panelLib" class="panel" hidden>
+      <div class="searchbox">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="libSearch" type="search" placeholder="Search your library…" autocomplete="off" />
+      </div>
+      <div id="libList" class="lib-list"></div>
+      <div id="libEmpty" class="lib-empty" hidden>
+        <div class="glyph">🔖</div>
+        <strong>Nothing here yet</strong>
+        <p>Bookmarks appear after the first sync.</p>
+      </div>
+      <p id="libError" class="error" hidden></p>
+      <footer class="foot">
+        <a href="#" id="openLib2">Open full library</a>
+      </footer>
+    </section>
   </main>
   <script src="popup.js"></script>
 </body>

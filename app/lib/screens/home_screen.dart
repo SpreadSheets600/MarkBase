@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
@@ -23,8 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Bookmark> get visible {
     final q = _search.text.trim().toLowerCase();
     return bookmarks.where((b) {
-      final inFolder =
-          activeFolder.isEmpty || b.folder == activeFolder || (b.folder.isEmpty && activeFolder == 'Unsorted');
+      final name = b.folder.isEmpty ? 'Unsorted' : b.folder;
+      final inFolder = activeFolder.isEmpty || name == activeFolder;
       final hit = q.isEmpty ||
           b.title.toLowerCase().contains(q) ||
           b.url.toLowerCase().contains(q) ||
@@ -36,7 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, int> get folderCounts {
     final m = <String, int>{};
     for (final b in bookmarks) {
-      m[b.folder.isEmpty ? 'Unsorted' : b.folder] = (m[b.folder.isEmpty ? 'Unsorted' : b.folder] ?? 0) + 1;
+      final name = b.folder.isEmpty ? 'Unsorted' : b.folder;
+      m[name] = (m[name] ?? 0) + 1;
     }
     return Map.fromEntries(m.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
   }
@@ -48,12 +52,18 @@ class _HomeScreenState extends State<HomeScreen> {
     load();
   }
 
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   Future<void> load() async {
     if (!await _api.isConfigured()) {
-      setState(() => phase = 'unconfigured');
+      if (mounted) setState(() => phase = 'unconfigured');
       return;
     }
-    setState(() => phase = 'loading');
+    if (bookmarks.isEmpty) setState(() => phase = 'loading');
     try {
       final list = await _api.fetchBookmarks();
       if (mounted) setState(() { bookmarks = list; phase = 'ok'; });
@@ -65,286 +75,533 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          ...MarkBaseTheme.aurora(size),
-          SafeArea(
-            child: RefreshIndicator.adaptive(
-              onRefresh: load,
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  _header,
-                  SliverToBoxAdapter(child: _searchBar),
-                  if (phase == 'ok' && bookmarks.isNotEmpty) ...[
-                    SliverToBoxAdapter(child: _folderChips),
-                    _list,
-                  ],
-                  SliverToBoxAdapter(child: _stateArea),
-                  const SliverToBoxAdapter(child: SizedBox(height: 60)),
+    final muted = ShadTheme.of(context).colorScheme.mutedForeground;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: Color(0xFF08080B)),
+        ...MarkBaseTheme.aurora(size),
+        SafeArea(
+          child: RefreshIndicator.adaptive(
+            onRefresh: load,
+            color: MarkBaseTheme.violet,
+            backgroundColor: const Color(0xFF14141B),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 110),
+              children: [
+                _header(muted),
+                const SizedBox(height: 18),
+                _searchField(),
+                if (phase == 'ok' && bookmarks.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _stats(),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2, bottom: 10),
+                    child: Row(
+                      children: [
+                        Text(
+                          'COLLECTIONS',
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: .1,
+                            color: muted.withValues(alpha: .85),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${folderCounts.length}',
+                          style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w600, color: muted.withValues(alpha: .6)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _filters(muted),
+                  const SizedBox(height: 6),
+                ],
+                const SizedBox(height: 8),
+                ..._body(muted),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------- header
+
+  Widget _header(Color muted) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            gradient: MarkBaseTheme.brand,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withValues(alpha: .40),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'M',
+            style: GoogleFonts.inter(
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'MarkBase',
+                style: GoogleFonts.inter(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.1,
+                  color: Colors.white,
+                  height: 1.05,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                switch (phase) {
+                  'ok' when bookmarks.isNotEmpty =>
+                    '${bookmarks.length} bookmarks · ${folderCounts.length} folders',
+                  'loading' => 'syncing with the cloud…',
+                  'unconfigured' => 'connect your cloud',
+                  _ => 'your bookmarks, everywhere',
+                },
+                style: GoogleFonts.inter(fontSize: 12.5, color: muted, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+        if (phase == 'ok')
+          ShadIconButton.ghost(
+            icon: const Icon(Icons.tune_rounded, size: 19),
+            onPressed: () => Navigator.pushNamed(context, '/settings').then((_) => load()),
+          ),
+      ],
+    );
+  }
+
+  Widget _searchField() => ShadInput(
+        controller: _search,
+        placeholder: const Text('Search bookmarks…'),
+        leading: const Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: Icon(Icons.search_rounded, size: 19, color: Color(0xFF9E9EA8)),
+        ),
+        trailing: _search.text.isEmpty
+            ? null
+            : ShadIconButton.ghost(
+                width: 26,
+                height: 26,
+                icon: const Icon(Icons.close_rounded, size: 15),
+                onPressed: () => _search.clear(),
+              ),
+      );
+
+  Widget _stats() {
+    final domains = bookmarks.map((b) => b.host).toSet().length;
+    final items = [
+      ('${bookmarks.length}', 'bookmarks'),
+      ('${folderCounts.length}', 'folders'),
+      ('$domains', 'domains'),
+    ];
+    return Row(
+      children: [
+        for (final (i, item) in items.indexed) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: ShadCard(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.$1,
+                    style: GoogleFonts.inter(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -.6,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    item.$2,
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: .02,
+                      color: const Color(0xFF9E9EA8),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _filters(Color muted) {
+    final folders = [('All', '', bookmarks.length), ...folderCounts.entries.map((e) => (e.key, e.key, e.value))];
+    return SizedBox(
+      height: 112,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: folders.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 14),
+        itemBuilder: (context, i) {
+          final (label, folder, count) = folders[i];
+          final on = activeFolder == folder;
+          return GestureDetector(
+            onTap: () => setState(() => activeFolder = on ? '' : folder),
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 86,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: on
+                          ? [const Color(0xFF8B5CF6), const Color(0xFF6D28D9)]
+                          : [const Color(0xFF3F3F46), const Color(0xFF18181B)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: on ? .30 : .22),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -5,
+                        left: 10,
+                        child: Container(
+                          width: 30,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: on ? const Color(0xFFA78BFA) : const Color(0xFF52525B),
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          folder.isEmpty ? '📚' : _emojiFor(label),
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 7),
+                SizedBox(
+                  width: 90,
+                  child: Text(
+                    label == 'All' ? 'All' : label.split(' / ').last,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: on ? FontWeight.w700 : FontWeight.w600,
+                      color: on ? Colors.white : muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      floatingActionButton: phase == 'ok'
-          ? FloatingActionButton.small(
-              tooltip: 'Settings',
-              backgroundColor: Colors.white10,
-              child: const Icon(Icons.tune_rounded),
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
-            )
-          : null,
     );
   }
 
-  SliverAppBar get _header => SliverAppBar.large(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        expandedHeight: 150,
-        title: Row(
-          children: [
-            Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                gradient: MarkBaseTheme.brand,
-                borderRadius: BorderRadius.circular(13),
-                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: .45), blurRadius: 18, offset: const Offset(0, 6))],
-              ),
-              alignment: Alignment.center,
-              child: const Text('M', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-            ),
-            const SizedBox(width: 12),
-            Text('MarkBase', style: Theme.of(context).textTheme.displayLarge),
-          ],
-        ),
-        flexibleSpace: FlexibleSpaceBar(
-          background: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 108, 16, 0),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Text(
-                switch (phase) {
-                  'ok' when bookmarks.isNotEmpty => '${bookmarks.length} bookmarks · always in sync',
-                  'loading' => 'syncing with the cloud…',
-                  'unconfigured' => 'let’s set things up',
-                  _ => '',
-                },
-                style: TextStyle(color: Colors.white.withValues(alpha: .55), fontSize: 13.5, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ),
-        actions: phase == 'ok'
-            ? [IconButton(icon: const Icon(Icons.settings_rounded), onPressed: () => Navigator.pushNamed(context, '/settings'))]
-            : null,
-      );
-
-  Widget get _searchBar => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-        child: TextField(
-          controller: _search,
-          decoration: InputDecoration(
-            hintText: 'Search bookmarks…',
-            prefixIcon: const Icon(Icons.search_rounded, size: 22),
-            suffixIcon: _search.text.isEmpty
-                ? null
-                : IconButton(icon: const Icon(Icons.close_rounded, size: 20), onPressed: _search.clear),
-          ),
-        ),
-      );
-
-  Widget get _folderChips => SizedBox(
-        height: 52,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          scrollDirection: Axis.horizontal,
-          children: [
-            _chip('All', ''), 
-            ...folderCounts.keys.map((f) => Padding(padding: const EdgeInsets.only(left: 8), child: _chip(f, f))),
-          ],
-        ),
-      );
-
-  Widget _chip(String label, String folder) {
-    final on = activeFolder == folder;
-    return ChoiceChip(
-      label: Text('$label · ${folder.isEmpty ? bookmarks.length : folderCounts[label] ?? 0}'),
-      selected: on,
-      selectedColor: const Color(0xFFA855F7),
-      showCheckmark: false,
-      labelStyle: TextStyle(color: on ? Colors.white : null, fontWeight: on ? FontWeight.w700 : FontWeight.w500),
-      onSelected: (_) => setState(() => activeFolder = on ? '' : folder),
-    );
+  static String _emojiFor(String name) {
+    final n = name.toLowerCase();
+    const map = {
+      'ai': '🤖', 'design': '🎨', 'dev': '🧑‍💻', 'code': '🧑‍💻', 'read': '📚',
+      'watch': '🎬', 'movie': '🎬', 'anime': '🌸', 'fun': '🎮', 'tool': '🧰',
+      'icon': '🧩', 'github': '🧑‍💻', 'news': '📰', 'music': '🎵',
+    };
+    for (final e in map.entries) {
+      if (n.contains(e.key)) return e.value;
+    }
+    return '📁';
   }
 
-  SliverList get _list => SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, i) => BookmarkTile(bookmark: visible[i]),
-          childCount: visible.length,
-        ),
-      );
+  // ------------------------------------------------------------------ body
 
-  Widget get _stateArea {
+  List<Widget> _body(Color muted) {
     switch (phase) {
       case 'loading':
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: List.generate(5, (i) => Container(
-              height: 74,
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: Colors.white.withValues(alpha: .05),
-                border: Border.all(color: Colors.white.withValues(alpha: .08)),
-              ),
-            )),
-          ),
-        );
+        return [for (var i = 0; i < 6; i++) const Padding(padding: EdgeInsets.only(bottom: 10), child: _SkeletonRow())];
       case 'unconfigured':
-        return _UnconfiguredCard(onOpen: () => Navigator.pushNamed(context, '/settings').then((_) => load()));
+        return [_UnconfiguredCard(onOpen: () => Navigator.pushNamed(context, '/settings').then((_) => load()))];
       case 'error':
-        return Padding(
-          padding: const EdgeInsets.all(24),
+        return [
+          ShadCard(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 38, color: Color(0xFFF43F5E)),
+                const SizedBox(height: 12),
+                Text(errorText, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white70)),
+                const SizedBox(height: 16),
+                ShadButton(onPressed: load, child: const Text('Try again')),
+              ],
+            ),
+          )
+        ];
+      case 'ok' when bookmarks.isEmpty:
+        return [_EmptyCard(onOpen: () => Navigator.pushNamed(context, '/settings').then((_) => load()))];
+    }
+
+    final list = visible;
+    if (list.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.only(top: 40),
           child: Column(
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 44, color: Colors.redAccent),
-              const SizedBox(height: 12),
-              Text(errorText, textAlign: TextAlign.center),
-              const SizedBox(height: 14),
-              FilledButton.tonal(onPressed: load, child: const Text('Retry')),
+              const Icon(Icons.search_off_rounded, size: 40, color: Color(0xFF52525B)),
+              const SizedBox(height: 10),
+              Text('Nothing matches “${_search.text}”',
+                  style: GoogleFonts.inter(fontSize: 14, color: muted)),
             ],
           ),
-        );
-      case 'ok' when bookmarks.isEmpty:
-        return const _EmptyCard();
-      default:
-        return const SizedBox.shrink();
+        )
+      ];
     }
+    return [for (final b in list) Padding(padding: const EdgeInsets.only(bottom: 9), child: BookmarkTile(bookmark: b))];
   }
 }
 
-class BookmarkTile extends StatelessWidget {
+// ------------------------------------------------------------------ widgets
+
+class BookmarkTile extends StatefulWidget {
   const BookmarkTile({super.key, required this.bookmark});
 
   final Bookmark bookmark;
 
-  void _open() => launchUrl(Uri.parse(bookmark.url), mode: LaunchMode.externalApplication);
+  @override
+  State<BookmarkTile> createState() => _BookmarkTileState();
+}
+
+class _BookmarkTileState extends State<BookmarkTile> {
+  bool copied = false;
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: widget.bookmark.url));
+    if (!mounted) return;
+    setState(() => copied = true);
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => copied = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final title = bookmark.title.isNotEmpty ? bookmark.title : bookmark.host;
-    return Card(
+    final b = widget.bookmark;
+    final title = b.title.isNotEmpty ? b.title : b.host;
+    return ShadCard(
+      padding: const EdgeInsets.all(11),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: _open,
-        onLongPress: () => ClipboardHelper.copy(context, bookmark.url),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 40, height: 40,
-                  color: Colors.white10,
-                  alignment: Alignment.center,
-                  child: Image.network(
-                    'https://www.google.com/s2/favicons?sz=64&domain=${bookmark.host}',
-                    width: 26, height: 26, fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(Icons.language_rounded, size: 22, color: Colors.white54),
-                  ),
-                ),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => launchUrl(Uri.parse(b.url), mode: LaunchMode.externalApplication),
+        onLongPress: _copy,
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFF16161D),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF22222B)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                    const SizedBox(height: 2),
-                    Text(
-                      bookmark.folder.isEmpty ? bookmark.host : '${bookmark.host} · ${bookmark.folder}',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.white.withValues(alpha: .5), fontSize: 12),
+              padding: const EdgeInsets.all(9),
+              child: Image.network(
+                'https://www.google.com/s2/favicons?sz=64&domain=${b.host}',
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(Icons.language_rounded, size: 18, color: Color(0xFF71717A)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFFAFAFA),
+                      letterSpacing: -.2,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    b.folder.isEmpty ? b.host : '${b.host}  ·  ${b.folder}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 11.5, color: const Color(0xFF8E8E99)),
+                  ),
+                ],
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white24),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: copied
+                  ? const Icon(Icons.check_rounded, key: ValueKey('ok'), size: 18, color: Color(0xFF34D399))
+                  : const Icon(Icons.north_east_rounded, key: ValueKey('go'), size: 15, color: Color(0xFF52525B)),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class ClipboardHelper {
-  static void copy(BuildContext context, String text) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text('Copied: $text'), duration: const Duration(seconds: 1)),
+class _SkeletonRow extends StatelessWidget {
+  const _SkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShadCard(
+      padding: const EdgeInsets.all(11),
+      child: Row(
+        children: [
+          Container(width: 42, height: 42, decoration: BoxDecoration(color: const Color(0xFF16161D), borderRadius: BorderRadius.circular(12))),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(height: 11, width: 160, decoration: BoxDecoration(color: const Color(0xFF1C1C24), borderRadius: BorderRadius.circular(6))),
+                const SizedBox(height: 7),
+                Container(height: 9, width: 100, decoration: BoxDecoration(color: const Color(0xFF17171E), borderRadius: BorderRadius.circular(5))),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _UnconfiguredCard extends StatelessWidget {
   const _UnconfiguredCard({required this.onOpen});
+
   final VoidCallback onOpen;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              children: [
-                ShaderMask(
-                  shaderCallback: (r) => MarkBaseTheme.brand.createShader(r),
-                  child: const Icon(Icons.auto_awesome_rounded, size: 46, color: Colors.white),
-                ),
-                const SizedBox(height: 12),
-                Text('Welcome to MarkBase', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 6),
-                Text('Point the app at your Cloudflare API and paste your sync token to bring ${'your bookmarks'} everywhere.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withValues(alpha: .6), fontSize: 13.5)),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: onOpen,
-                  icon: const Icon(Icons.key_rounded),
-                  label: const Text('Connect now'),
-                ),
-              ],
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 26),
+      child: ShadCard(
+        padding: const EdgeInsets.all(26),
+        child: Column(
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                gradient: MarkBaseTheme.brand,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: .35), blurRadius: 26, offset: const Offset(0, 8)),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 26),
             ),
-          ),
+            const SizedBox(height: 16),
+            Text('Welcome to MarkBase',
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -.5)),
+            const SizedBox(height: 7),
+            Text(
+              'Point the app at your Cloudflare API and paste the sync token. '
+              'Your bookmarks will follow you to every device.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: const Color(0xFF9E9EA8)),
+            ),
+            const SizedBox(height: 20),
+            ShadButton(
+              onPressed: onOpen,
+              leading: const Icon(Icons.key_rounded, size: 16),
+              child: const Text('Connect your cloud'),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _EmptyCard extends StatelessWidget {
-  const _EmptyCard();
+  const _EmptyCard({required this.onOpen});
+
+  final VoidCallback onOpen;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(24),
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: ShadCard(
+        padding: const EdgeInsets.all(26),
         child: Column(
           children: [
-            const Text('🙂', style: TextStyle(fontSize: 44)),
-            const SizedBox(height: 10),
-            Text('No bookmarks here yet', style: Theme.of(context).textTheme.titleLarge),
+            const Icon(Icons.bookmark_border_rounded, size: 42, color: Color(0xFF71717A)),
+            const SizedBox(height: 12),
+            Text('No bookmarks yet',
+                style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -.4)),
             const SizedBox(height: 6),
-            Text('Add bookmarks in your browser — the extension syncs them within seconds.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withValues(alpha: .55), fontSize: 13.5)),
+            Text(
+              'Add bookmarks in your browser — the extension pushes them here within seconds.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 13, height: 1.55, color: const Color(0xFF9E9EA8)),
+            ),
+            const SizedBox(height: 18),
+            ShadButton.outline(
+              onPressed: onOpen,
+              leading: const Icon(Icons.settings_rounded, size: 16),
+              child: const Text('Open settings'),
+            ),
           ],
         ),
-      );
+      ),
+    );
+  }
 }

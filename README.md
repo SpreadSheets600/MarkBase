@@ -5,9 +5,9 @@ Your bookmarks, everywhere. A tiny, free, stateless sync stack:
 | Piece | Tech | Where |
 |---|---|---|
 | **API** | Python Worker (Pyodide on the edge) + D1 SQLite | Cloudflare — `api/` |
-| **Extension** | Chrome/Brave/Edge MV3 watcher, Pico.css popup | `extension/` |
-| **Phone app** | Flutter · Material 3 · aurora glass theme | `app/` |
-| **Dashboard** | PWA served by the same Worker (Bootstrap 5) | `api/public/` |
+| **Extension** | Chrome/Brave/Edge MV3 watcher · Pico.css popup (tabs, folder filters) | `extension/` |
+| **Phone app** | Flutter · **shadcn_ui** components · aurora theme | `app/` |
+| **Dashboard** | Auroum-style library shell · **Bootstrap 5** | `api/public/` |
 | **Hosted app** | the Flutter web build, also on the Worker | `/app` |
 
 ```

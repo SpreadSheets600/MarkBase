@@ -1,59 +1,170 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MarkBase · Your bookmarks, everywhere</title>
-  <meta name="description" content="MarkBase — a live copy of your browser bookmarks, on every device." />
+  <title>MarkBase · Library</title>
+  <meta name="description" content="Your bookmarks, everywhere." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon192.png" type="image/png" />
-  <meta name="theme-color" content="#0b0b14" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#fafafa" />
   <link rel="stylesheet" href="vendor/bootstrap.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- aurora backdrop -->
-  <div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
-
-  <header class="glass-nav">
-    <div class="container d-flex align-items-center gap-2 py-2">
-      <span class="logo">M</span>
-      <div class="me-auto">
-        <div class="fw-bold lh-1">MarkBase</div>
-        <div class="tiny opacity-50">your bookmarks, everywhere</div>
+  <div class="shell">
+    <!-- ------------------------------------------------------------ sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="workspace-card">
+        <div class="avatar gradient">M</div>
+        <div class="grow">
+          <div class="ws-title">MarkBase</div>
+          <div class="ws-sub" id="wsSub">Workspace</div>
+        </div>
+        <button class="icon-btn" id="settingsBtn" title="Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
       </div>
-      <button id="searchToggle" class="btn btn-ghost btn-sm d-md-none" aria-label="Search">🔍</button>
-      <span id="countBadge" class="badge-pill" hidden></span>
-      <button id="refreshBtn" class="btn btn-ghost btn-sm" title="Refresh">⟳</button>
-      <button id="lockBtn" class="btn btn-ghost btn-sm" title="Change token">🔒</button>
-    </div>
-    <div class="container search-wrap" id="searchWrap">
-      <input id="search" class="form-control search" type="search" placeholder="Search bookmarks…" autocomplete="off" />
-    </div>
-  </header>
 
-  <main class="container content">
-    <section id="gate" class="glass-card gate">
-      <h1 class="display-title">Welcome to MarkBase ✨</h1>
-      <p class="opacity-75">Paste your sync token once — this device remembers it.</p>
-      <input id="tokenInput" class="form-control mb-2" type="password" placeholder="SYNC_TOKEN" autocomplete="off" />
-      <button id="gateBtn" class="btn btn-gradient w-100">Unlock my bookmarks →</button>
-      <p id="gateError" class="text-danger small mt-2 mb-0" hidden></p>
-    </section>
+      <button class="new-btn" id="refreshBtn">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        Sync library
+      </button>
 
-    <section id="app" hidden>
-      <div id="stats" class="stats-row"></div>
-      <div id="folders" class="folder-chips"></div>
-      <div id="list"></div>
-      <div id="empty" class="glass-card empty" hidden>
-        <div class="big">🙂</div>
-        <div class="fw-semibold">No bookmarks here yet</div>
-        <p class="opacity-60 mb-0 small">Add bookmarks in your browser — the extension pushes them here automatically.</p>
+      <div class="nav-section">Main menu</div>
+      <nav class="nav-list" id="mainNav">
+        <button class="nav-item" data-view="all">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12a2 2 0 0 1 2 2v16l-8-4.5L4 21V5a2 2 0 0 1 2-2z"/></svg></span>
+          <span class="grow">All Bookmarks</span><span class="count" id="cntAll">0</span>
+        </button>
+        <button class="nav-item active" data-view="collections">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+          <span class="grow">Collections</span><span class="count" id="cntCollections">0</span>
+        </button>
+        <button class="nav-item" data-view="recent">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <span class="grow">Recently added</span><span class="count" id="cntRecent">0</span>
+        </button>
+        <button class="nav-item" data-view="trash">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></span>
+          <span class="grow">Trash</span>
+        </button>
+      </nav>
+
+      <div class="nav-section">Folders</div>
+      <nav class="nav-list folder-list" id="folderNav"></nav>
+
+      <div class="sidebar-bottom">
+        <div class="nav-section">Tools</div>
+        <button class="nav-item small" id="helpBtn">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.4 2.3c-.6.2-.9.8-.9 1.4v.8"/><path d="M12 17h.01"/></svg></span>
+          <span class="grow">Help</span>
+        </button>
+        <button class="nav-item small" id="settingsBtn2">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg></span>
+          <span class="grow">Settings</span>
+        </button>
+        <button class="nav-item small" id="exportBtn">
+          <span class="ni-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+          <span class="grow">Export bookmarks</span>
+        </button>
+
+        <div class="user-card" id="userCard">
+          <div class="avatar small" id="userAvatar">M</div>
+          <div class="grow">
+            <div class="user-name" id="userName">This device</div>
+            <div class="user-sub" id="userSub">not connected</div>
+          </div>
+          <button class="icon-btn danger" id="lockBtn" title="Sign out of this device">
+            <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
+          </button>
+        </div>
       </div>
-    </section>
-  </main>
+    </aside>
 
+    <!-- --------------------------------------------------------------- main -->
+    <div class="main">
+      <header class="topbar">
+        <div class="hist">
+          <button class="icon-btn" id="backBtn" title="Back" disabled><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button class="icon-btn" id="fwdBtn" title="Forward" disabled><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+        <div class="crumbs" id="crumbs"><span class="crumb-muted">Library</span><span class="slash">/</span><span class="crumb-current">Collections</span></div>
+
+        <div class="searchwrap">
+          <svg class="s-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search" type="search" placeholder="Search all collections…" autocomplete="off" />
+          <kbd id="searchKbd">Ctrl K</kbd>
+        </div>
+
+        <div class="top-actions">
+          <div class="seg" id="layoutToggle">
+            <button class="seg-btn active" data-layout="grid" title="Grid view">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            </button>
+            <button class="seg-btn" data-layout="list" title="List view">
+              <svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+            </button>
+          </div>
+          <button class="new-btn compact" id="refreshBtn2">
+            <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <main class="content" id="content"></main>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- gate ---->
+  <div class="overlay" id="gate">
+    <div class="gate-card">
+      <div class="avatar gradient xl">M</div>
+      <h1>Welcome to MarkBase</h1>
+      <p>Paste your sync token once. This browser remembers it.</p>
+      <input id="gateInput" type="password" placeholder="mb_sync_…" autocomplete="off" />
+      <button class="primary-btn" id="gateBtn">Unlock my library →</button>
+      <p class="gate-error" id="gateError" hidden></p>
+      <p class="gate-hint">The token lives in <code>api/.env</code> and was set with <code>wrangler secret put</code>.</p>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ settings -->
+  <div class="overlay" id="settingsModal" hidden>
+    <div class="gate-card left">
+      <div class="modal-head">
+        <h2>Connection</h2>
+        <button class="icon-btn" id="closeSettings"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <label class="field-label">API endpoint</label>
+      <input id="setEndpoint" type="url" readonly />
+      <label class="field-label">Sync token</label>
+      <input id="setToken" type="password" placeholder="mb_sync_…" />
+      <button class="primary-btn" id="saveSettings">Save & verify</button>
+      <p class="gate-hint" id="settingsMsg"></p>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------------- help -->
+  <div class="overlay" id="helpModal" hidden>
+    <div class="gate-card left">
+      <div class="modal-head">
+        <h2>How MarkBase works</h2>
+        <button class="icon-btn" id="closeHelp"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <ol class="help-list">
+        <li><b>Browser</b> — the extension watches your bookmarks and pushes a snapshot within seconds of any change.</li>
+        <li><b>Cloud</b> — this dashboard and the phone app read the same list from your Cloudflare API.</li>
+        <li><b>Folders → Collections</b> — every folder in your bookmarks bar appears here automatically.</li>
+        <li><b>Deletes</b> — removed bookmarks vanish everywhere at the next sync; nothing lingers in Trash.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="vendor/bootstrap.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
