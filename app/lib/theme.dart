@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-/// MarkBase visual language — shadcn (zinc + violet), light and dark.
+/// MarkBase visual language - shadcn (zinc + violet), light and dark.
 ///
 /// The palettes mirror the dashboard and the extension:
 ///   light  bg #FBFBFC · card #FFFFFF · border #E7E7EA · ink #141418
@@ -37,25 +37,26 @@ abstract final class MarkBaseTheme {
   );
 
   /// The original zinc/violet night palette.
+  /// Matches the web dashboard tokens (bg #09090b, surface #0f0f12, line #1f1f26).
   static const darkScheme = ShadColorScheme(
-    background: Color(0xFF08080B),
+    background: Color(0xFF09090B),
     foreground: Color(0xFFFAFAFA),
-    card: Color(0xFF0D0D12),
+    card: Color(0xFF0F0F12),
     cardForeground: Color(0xFFFAFAFA),
-    popover: Color(0xFF0D0D12),
+    popover: Color(0xFF0F0F12),
     popoverForeground: Color(0xFFFAFAFA),
     primary: Color(0xFF8B5CF6),
     primaryForeground: Color(0xFFFAFAFA),
-    secondary: Color(0xFF1C1C24),
+    secondary: Color(0xFF151519),
     secondaryForeground: Color(0xFFFAFAFA),
-    muted: Color(0xFF1C1C24),
-    mutedForeground: Color(0xFF9E9EA8),
-    accent: Color(0xFF241A3D),
+    muted: Color(0xFF151519),
+    mutedForeground: Color(0xFFA1A1AA),
+    accent: Color(0xFF1B1530),
     accentForeground: Color(0xFFFAFAFA),
     destructive: Color(0xFFF43F5E),
     destructiveForeground: Color(0xFFFAFAFA),
-    border: Color(0xFF22222B),
-    input: Color(0xFF22222B),
+    border: Color(0xFF1F1F26),
+    input: Color(0xFF2B2B34),
     ring: Color(0xFF8B5CF6),
     selection: Color(0xFF8B5CF6),
   );
@@ -63,7 +64,7 @@ abstract final class MarkBaseTheme {
   static ShadThemeData light() => ShadThemeData(
         brightness: Brightness.light,
         colorScheme: lightScheme,
-        radius: const BorderRadius.all(Radius.circular(18)),
+        radius: const BorderRadius.all(Radius.circular(14)),
         textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
         primaryButtonTheme: const ShadButtonTheme(
           height: 44,
@@ -86,7 +87,7 @@ abstract final class MarkBaseTheme {
   static ShadThemeData dark() => ShadThemeData(
         brightness: Brightness.dark,
         colorScheme: darkScheme,
-        radius: const BorderRadius.all(Radius.circular(18)),
+        radius: const BorderRadius.all(Radius.circular(14)),
         textTheme: ShadTextTheme.fromGoogleFont(GoogleFonts.inter),
         primaryButtonTheme: const ShadButtonTheme(
           height: 44,
@@ -95,7 +96,7 @@ abstract final class MarkBaseTheme {
         ),
         outlineButtonTheme: const ShadButtonTheme(
           height: 40,
-          backgroundColor: Color(0xFF0D0D12),
+          backgroundColor: Color(0xFF0F0F12),
           hoverBackgroundColor: Color(0xFF1C1C24),
         ),
         cardTheme: const ShadCardTheme(padding: EdgeInsets.all(14)),
@@ -114,7 +115,7 @@ abstract final class MarkBaseTheme {
         seedColor: violetDeep,
         brightness: brightness,
       ),
-      scaffoldBackgroundColor: dark ? const Color(0xFF08080B) : const Color(0xFFFBFBFC),
+      scaffoldBackgroundColor: dark ? const Color(0xFF09090B) : const Color(0xFFFBFBFC),
       fontFamily: GoogleFonts.inter().fontFamily,
     );
   }
@@ -122,7 +123,7 @@ abstract final class MarkBaseTheme {
   static bool isDark(BuildContext context) =>
       ShadTheme.of(context).brightness == Brightness.dark;
 
-  /// The brand gradient — used for the logo and a few highlights.
+  /// The brand gradient - used for the logo and a few highlights.
   static LinearGradient get brand => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

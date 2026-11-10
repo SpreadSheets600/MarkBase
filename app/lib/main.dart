@@ -1,14 +1,22 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-import 'screens/home_screen.dart';
-import 'screens/settings_screen.dart';
+import 'api.dart';
+import 'screens/shell.dart';
 import 'theme.dart';
 import 'theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await themeController.hydrate();
+  final api = MarkBaseApi();
+  final links = AppLinks();
+  try {
+    final first = await links.getInitialLink();
+    if (first != null) await api.handleAuthLink(first);
+  } catch (_) {}
+  links.uriLinkStream.listen(api.handleAuthLink, onError: (_) {});
   runApp(const MarkBaseApp());
 }
 
@@ -25,8 +33,7 @@ class MarkBaseApp extends StatelessWidget {
         themeMode: mode,
         theme: MarkBaseTheme.light(),
         darkTheme: MarkBaseTheme.dark(),
-        home: const HomeScreen(),
-        routes: {'/settings': (_) => const SettingsScreen()},
+        home: const Shell(),
         // Material umbrella so RefreshIndicator / InkWell behave nicely
         // inside the shadcn component tree, in whichever brightness is live.
         builder: (context, child) => Theme(

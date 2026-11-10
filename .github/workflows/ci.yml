@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── 1. API Verification ────────────────────────────────────────────────
+  api:
+    name: API (Python Worker)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Python syntax
+        run: |
+          python3 -m py_compile api/src/main.py api/src/sync.py
+
+  # ── 2. Web Dashboard ───────────────────────────────────────────────────
+  web:
+    name: Web Dashboard (React + Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: web/package.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Typecheck & Build Web App
+        working-directory: web
+        run: npm run build
+
+  # ── 3. Chrome Extension ────────────────────────────────────────────────
+  extension:
+    name: Chrome Extension (MV3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install capture dependencies
+        working-directory: capture
+        run: npm ci
+
+      - name: Check extension script syntax
+        run: |
+          node --check extension/background.js
+          node --check extension/popup.js
+          node --check extension/dwell.js
+          node --check extension/session-bridge.js
+
+      - name: Build extension package
+        run: bash scripts/build_extension.sh
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: markbase-extension
+          path: dist/*.zip
+          retention-days: 14
+
+  # ── 4. Cross-Platform App (Flutter) ────────────────────────────────────
+  app:
+    name: App (Flutter Web & Mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        working-directory: app
+        run: flutter pub get
+
+      - name: Analyze code
+        working-directory: app
+        run: flutter analyze
+
+      - name: Run widget tests
+        working-directory: app
+        run: flutter test
+
+      - name: Build Flutter Web
+        working-directory: app
+        run: flutter build web --release --base-href=/app/
+
+      - name: Upload web app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: markbase-app-web
+          path: app/build/web/
+          retention-days: 14

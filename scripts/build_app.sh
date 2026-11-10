@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MarkBase — build the Flutter app and optionally host it on the Worker at /app.
+# MarkBase - build the Flutter app and optionally host it on the Worker at /app.
 # Usage: ./scripts/build_app.sh [--install-on-worker]
 set -euo pipefail
 cd "$(dirname "$0")/../app"

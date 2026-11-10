@@ -1,107 +1,162 @@
-# 🔖 MarkBase
+# MarkBase
 
-Your bookmarks, everywhere. A tiny, free, stateless sync stack:
+> **Your bookmarks and reading history, everywhere.**  
+> A lightning-fast, private, cross-device sync stack powered by Cloudflare Workers, SQLite D1, Flutter, React, and a Chrome extension.
 
-| Piece | Tech | Where |
-|---|---|---|
-| **API** | Python Worker (Pyodide on the edge) + D1 SQLite | Cloudflare — `api/` |
-| **Extension** | Chrome/Brave/Edge MV3 watcher · Pico.css popup (tabs, folder filters, dark mode) | `extension/` |
-| **Phone app** | Flutter · **shadcn_ui** components · light + dark aurora themes | `app/` |
-| **Dashboard** | Auroum-style library shell · **Bootstrap 5** · light + dark | `api/public/` |
-| **Hosted app** | the Flutter web build, also on the Worker | `/app` |
+---
+
+## Architecture Overview
+
+MarkBase is structured as four unified surfaces that stay in continuous two-way sync:
 
 ```
-Browser bookmarks ──(auto, bearer token)──▶ Python Worker ──▶ D1
-                                                ▲
-                            Flutter app / PWA ──┘ (pull)
+┌─────────────────────────────────────────────────────────────┐
+│                      Cloudflare Edge                        │
+│  Python Worker (Pyodide) + D1 SQLite + Full-Text Search     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          ▼                    ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│ Chrome Extension │  │  Web Dashboard   │  │ Cross-Platform   │
+│  (Manifest V3)   │  │ (React 19, Vite) │  │  (Flutter Mobile │
+│ Instant 2-way    │  │ Command Palette  │  │   & Desktop)     │
+│ Smart History    │  │ Google Auth      │  │ Shadcn design    │
+│ Page extractor   │  │ Markdown Reader  │  │ Offline-first    │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
-## Live setup (already done)
-
-- Worker URL: `https://markbase-api.spreadsheets600.workers.dev`
-- Flutter web app: same URL at `/app`
-- D1 database: `markbase-db`
-- Sync token: `api/.env` (**never commit it** — same token goes in the extension + app)
-
-## Scripts
-
-| Command | What it does |
-|---|---|
-| `scripts/setup.sh` | first-time setup: login check → D1 schema → token → deploy |
-| `scripts/deploy.sh` | push API/dashboard changes to Cloudflare |
-| `scripts/build_extension.sh` | validate + zip the extension → `dist/*.zip` |
-| `scripts/build_app.sh --install-on-worker` | build Flutter web + redeploy to `/app` |
-
-## How sync works
-
-- The extension watches *all* bookmark events (`created/changed/moved/removed`, imports too)
-  and pushes a **full idempotent snapshot** after a 1.5s debounce; a safety-net alarm
-  re-syncs every 30 min and failures retry with backoff (1/4/15 min).
-- `POST /v1/sync` marks everything not in the snapshot as soft-deleted, then upserts —
-  one atomic D1 batch. So deletions propagate too.
-- The app/dashboard just pulls `GET /v1/bookmarks`.
-
-## API
-
-| Route | Auth | What |
+| Component | Technology | Directory |
 |---|---|---|
-| `POST /v1/sync` | bearer | Bulk upsert + diff-soft-delete (`{ "bookmarks": [...] }`) |
-| `GET /v1/bookmarks` | bearer | Live list |
-| `DELETE /v1/bookmarks` | bearer | Wipe all |
-| `GET /v1/favicon?domain=…` | — | CORS-safe favicon proxy (needed by the Flutter web build) |
-| `GET /health` | — | probe |
+| **API & Database** | Cloudflare Python Worker + D1 SQLite | [`api/`](api/) |
+| **Browser Extension** | Chrome/Brave/Edge MV3 · Instant Two-Way Sync · Smart History · Vector Icons | [`extension/`](extension/) |
+| **Web Dashboard** | React 19 + TypeScript + Tailwind CSS + Lucide Icons + Command Palette (`Cmd+K`) | [`web/`](web/) |
+| **Mobile & Desktop** | Flutter (Android, Linux, macOS, Windows, iOS, Web) | [`app/`](app/) |
 
-## Local development
+---
 
+## Key Features
+
+### 1. Instant Two-Way Bookmark Sync
+- **Sub-500ms Debounce**: Listens directly to all browser bookmark changes (`onCreated`, `onRemoved`, `onChanged`, `onMoved`, `onChildrenReordered`) and immediately pushes diffs to Cloudflare D1.
+- **Echo Prevention**: Uses recursion guards so that remote changes applied locally do not bounce back into sync loops.
+- **Full Folder Tree**: Synchronizes the Bookmarks Bar, Other Bookmarks, Mobile Bookmarks, and custom nested collections.
+
+### 2. Smart History & Content Extraction
+- **Configurable Dwell Time**: Intelligently captures pages you actively read (default **10 seconds**, configurable to 10s, 30s, or 60s) via [`extension/dwell.js`](extension/dwell.js).
+- **In-Browser Content Extractor**: Runs readability extraction ([`Defuddle`](extension/capture.js)) in the background to extract clean article text, metadata, and markdown without sending unread tabs to the server.
+- **Privacy First**: Automatically skips private IP addresses, `localhost`, and sensitive domains (`bank`, `login`, `auth`, `paypal`, `stripe`).
+- **Decoupled Flush**: Queues history clips and flushes them in batches (default **20 seconds**) so heavy reading never blocks bookmark sync.
+
+### 3. Google OAuth 2.0 & Session Bridging
+- Sign in with Google on the web dashboard (`resonant-gizmo-488415-b0`).
+- The extension automatically picks up your dashboard session via [`extension/session-bridge.js`](extension/session-bridge.js), meaning you sign in once and all devices connect.
+- API tokens (`mb_sync_...`) remain supported for headless or self-hosted workflows.
+
+### 4. Cross-Surface Notes & Collections
+- Create and organize quick notes synchronized across the extension popup, mobile app, and web dashboard.
+- Full-text search over bookmark titles, URLs, tags, and extracted page contents.
+
+### 5. Polished UI & Vector Icon System
+- Built with a modern dark palette (`#09090b` solid base, `#111115` surface, `#8b5cf6` violet accents).
+- Strictly vector-based: zero emojis, using Feather / Lucide SVG icons across all interfaces.
+- Generous spacing with clean key-value inspector status rows and an in-flow dock bar that eliminates floating overlay clipping.
+
+---
+
+## API Reference
+
+Base URL: `https://markbase-api.spreadsheets600.workers.dev`
+
+All authenticated endpoints require an `Authorization: Bearer <token_or_jwt>` header.
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/v1/health` | `GET` | Healthcheck and timestamp probe |
+| `/v1/auth/google` | `POST` | Google ID token verification & session exchange |
+| `/v1/changes` | `POST` | Push local bookmark changes & receive remote delta |
+| `/v1/bookmarks` | `GET` / `POST` / `DELETE` | List, add, or wipe bookmarks |
+| `/v1/bookmarks/trash` | `POST` | Soft-delete / trash bookmarks |
+| `/v1/bookmarks/restore` | `POST` | Restore bookmarks from trash |
+| `/v1/bookmarks/purge` | `POST` | Permanently delete bookmarks |
+| `/v1/bookmarks/move` | `POST` | Move bookmarks to a folder |
+| `/v1/search?q=...` | `GET` | Full-text search across bookmarks, notes, and pages |
+| `/v1/notes` | `GET` / `POST` / `DELETE` | Manage synchronized notes |
+| `/v1/clip` | `POST` | Ingest extracted page contents & dwell history |
+| `/v1/page?url=...` | `GET` | Retrieve bookmark, content, and history info for a URL |
+| `/v1/pages` | `GET` / `DELETE` | List or clear reading history |
+
+---
+
+## Local Development & Setup
+
+### Prerequisites
+- Node.js (v20+)
+- Python 3.11+
+- Flutter SDK (3.24+)
+- Cloudflare Wrangler CLI (`npm install -g wrangler`)
+
+### 1. Cloudflare Worker & D1 Setup
 ```bash
-cd api                && npm i
+cd api
+npm install
+# Initialize local SQLite D1 database
 npx wrangler d1 execute markbase-db --local --file=./schema.sql
-npx wrangler dev      # worker on :8787, DB local
+# Run local worker on http://localhost:8787
+npx wrangler dev
 ```
 
-Deploy new changes: `npx wrangler deploy`
+To deploy to Cloudflare:
+```bash
+npx wrangler deploy
+```
 
-## Load the extension locally
+### 2. Chrome Extension Build & Load
+```bash
+# Build the extraction bundle and zip package
+bash scripts/build_extension.sh
+```
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** in the top right.
+3. Click **Load unpacked** and select the [`extension/`](extension/) directory.
+4. Open the extension popup, connect to your MarkBase dashboard or paste your sync token.
 
-1. `chrome://extensions` → enable **Developer mode**
-2. **Load unpacked** → select `markbase/extension/`
-3. Open the popup → paste the Worker URL + sync token → Save
-4. It syncs immediately; afterwards it's fully automatic.
+### 3. Web Dashboard Build
+```bash
+cd web
+npm install
+npm run dev        # Local dev server on :5173
+npm run build      # Production build straight into api/public/
+```
 
-If the toolbar icon ever refuses to open the popup, the same panel is always
-reachable from `chrome://extensions` → **MarkBase Sync** → *Details* →
-**Extension options**.
-
-## Themes
-
-One palette across all three surfaces — zinc neutrals with a violet accent,
-light and dark:
-
-- **Dashboard** — sun/moon button in the top bar (remembers `mb_theme`, follows
-  the OS until you pick a side).
-- **Extension popup** — same toggle in the header (remembers `mb_theme`).
-- **Flutter app** — header toggle, plus System / Light / Dark in Settings
-  (persisted with `shared_preferences`).
-
-## Build / run the phone app
-
+### 4. Flutter App (Mobile & Desktop)
 ```bash
 cd app
 flutter pub get
-flutter run            # on a connected device/emulator
-flutter build apk --release   # installable APK for your phone
+flutter analyze
+flutter test
+flutter run        # Run on Linux desktop, connected Android phone, or Chrome
 ```
 
-Then in-app → Connect now → paste URL + token.
-
-## PWA dashboard
-
-Visit the Worker URL in any browser (phone included) → paste token once →
-your list, searchable, grouped, with favicons. Installable ("Add to Home Screen").
-
-## Rotate the token
-
+To build a standalone APK for Android:
 ```bash
-openssl rand -hex 24 | (echo "mb_sync_$(cat)") > api/.env
-cat api/.env | npx wrangler secret put SYNC_TOKEN
+flutter build apk --release
 ```
+
+---
+
+## Automation & CI/CD
+
+Workflows are configured under [`.github/workflows/`](.github/workflows/):
+- **`ci.yml`**: Runs on push and pull requests to `main`:
+  - Python worker compile check (`py_compile`)
+  - Web dashboard typecheck & production build (`tsc && vite build`)
+  - Chrome extension syntax checks (`node --check`) and artifact generation
+  - Flutter code analysis, widget tests, and web compilation
+- **`release.yml`**: Automatically builds extension packages (`.zip`) and release binaries upon pushing version tags (`v*`).
+
+---
+
+## License
+
+MIT License. Designed and crafted for private, stateless, dependable bookmark and reading synchronization.

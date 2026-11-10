@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MarkBase — validate manifest + JS syntax, then zip the extension → dist/.
+# MarkBase - validate manifest + JS syntax, then zip the extension → dist/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,12 +9,14 @@ m = json.load(open("extension/manifest.json"))
 required = {"manifest_version", "name", "version", "background", "action", "permissions"}
 missing = required - m.keys()
 assert not missing, f"manifest missing: {missing}"
-print("✓ manifest valid —", m["name"], "v" + m["version"])
+print("✓ manifest valid -", m["name"], "v" + m["version"])
 EOF
 
 node --check extension/background.js && echo "✓ background.js syntax OK"
 node --check extension/popup.js && echo "✓ popup.js syntax OK"
-node --check extension/theme.js && echo "✓ theme.js syntax OK"
+node --check extension/dwell.js && echo "✓ dwell.js syntax OK"
+[[ -d capture/node_modules ]] || (cd capture && npm ci --silent)
+(cd capture && node build.mjs)
 
 mkdir -p dist
 rm -f dist/markbase-extension-v*.zip
@@ -38,6 +40,6 @@ except Exception:
             for f in files:
                 p = os.path.join(root, f)
                 z.write(p, os.path.relpath(p, "extension"))
-print(f"✅ Packed: {out} ({os.path.getsize(out)//1024} KB) — upload as-is to the Chrome Web Store or load extension/ unpacked.")
+print(f"✅ Packed: {out} ({os.path.getsize(out)//1024} KB) - upload as-is to the Chrome Web Store or load extension/ unpacked.")
 EOF
 echo "📦 Extension build complete → $PWD/$OUT"

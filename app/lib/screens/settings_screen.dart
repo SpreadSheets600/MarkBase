@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../api.dart';
-import '../theme.dart';
+import '../library.dart';
 import '../theme_controller.dart';
 
+/// Account + appearance. Sign-in is Google only - no tokens or URLs to type on the phone.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -15,214 +17,126 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _api = MarkBaseApi();
-  final _endpoint = TextEditingController();
-  final _token = TextEditingController();
-  bool testing = false;
-  String? success;
-  String? failure;
+  ({String name, String email}) me = (name: '', email: '');
+  bool signedIn = false;
 
   @override
   void initState() {
     super.initState();
-    _api.endpoint().then((v) => setState(() => _endpoint.text = v ?? ''));
-    _api.token().then((v) => setState(() => _token.text = v ?? ''));
+    _load();
+    MarkBaseApi.authChanged.addListener(_load);
   }
 
   @override
   void dispose() {
-    _endpoint.dispose();
-    _token.dispose();
+    MarkBaseApi.authChanged.removeListener(_load);
     super.dispose();
   }
 
-  Future<void> _saveAndTest() async {
-    await _api.save(endpoint: _endpoint.text, token: _token.text);
-    setState(() {
-      testing = true;
-      success = null;
-      failure = null;
-    });
-    try {
-      final n = (await _api.fetchBookmarks()).length;
-      setState(() => success = 'Connected — $n bookmarks in the cloud');
-    } on ApiException catch (e) {
-      setState(() => failure = e.message);
-    }
-    if (mounted) setState(() => testing = false);
+  Future<void> _load() async {
+    final p = await _api.profile();
+    final ok = await _api.isConfigured();
+    if (mounted) setState(() { me = p; signedIn = ok; });
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     final scheme = ShadTheme.of(context).colorScheme;
-    final dark = MarkBaseTheme.isDark(context);
+    Widget section(String t) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 22, 0, 8),
+          child: Text(t.toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.1, color: scheme.mutedForeground)),
+        );
+    Widget card(Widget child) => Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: scheme.card, borderRadius: BorderRadius.circular(18), border: Border.all(color: scheme.border)),
+          child: child,
+        );
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ColoredBox(color: scheme.background),
-        ...MarkBaseTheme.aurora(size, dark: dark),
-        SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 40),
-            children: [
-              Row(
-                children: [
-                  ShadIconButton.ghost(
-                    icon: const Icon(Icons.arrow_back_rounded, size: 19),
-                    onPressed: () => Navigator.maybePop(context),
+    final name = me.name.isNotEmpty ? me.name : (signedIn ? 'Signed in' : '');
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
+        children: [
+          Text('Settings', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: -.6, color: scheme.foreground)),
+          section('Account'),
+          card(signedIn
+              ? Row(children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: scheme.accent,
+                    child: Text((name.isNotEmpty ? name : '?')[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: scheme.foreground)),
                   ),
-                  const SizedBox(width: 4),
-                  Text('Settings',
-                      style: GoogleFonts.inter(
-                          fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.8, color: scheme.foreground)),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // ------------------------------------------------------- theme
-              _sectionTitle('Appearance', scheme),
-              const SizedBox(height: 8),
-              ShadCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'MarkBase follows the same palette as the dashboard and the browser extension.',
-                      style: GoogleFonts.inter(fontSize: 12.5, height: 1.55, color: scheme.mutedForeground),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        _themeChip('System', Icons.brightness_auto_rounded, ThemeMode.system, scheme),
-                        const SizedBox(width: 8),
-                        _themeChip('Light', Icons.light_mode_rounded, ThemeMode.light, scheme),
-                        const SizedBox(width: 8),
-                        _themeChip('Dark', Icons.dark_mode_rounded, ThemeMode.dark, scheme),
-                      ],
-                    ),
-                  ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(name, style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w600, color: scheme.foreground)),
+                      if (me.email.isNotEmpty) Text(me.email, style: GoogleFonts.inter(fontSize: 12.5, color: scheme.mutedForeground)),
+                    ]),
+                  ),
+                  ShadButton.outline(
+                    size: ShadButtonSize.sm,
+                    onPressed: () async {
+                      await _api.signOut();
+                      library.bookmarks = [];
+                      library.notifyListeners_();
+                    },
+                    child: const Text('Sign out'),
+                  ),
+                ])
+              : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Sign in to sync your library across your browsers and this phone.',
+                      style: GoogleFonts.inter(fontSize: 13, height: 1.5, color: scheme.mutedForeground)),
+                  const SizedBox(height: 14),
+                  ShadButton(
+                    width: double.infinity,
+                    onPressed: _api.signInWithGoogle,
+                    leading: const Icon(Icons.login_rounded, size: 16),
+                    child: const Text('Continue with Google'),
+                  ),
+                ])),
+          section('Appearance'),
+          card(Row(children: [
+            for (final (label, icon, mode) in [
+              ('System', Icons.brightness_auto_rounded, ThemeMode.system),
+              ('Light', Icons.light_mode_rounded, ThemeMode.light),
+              ('Dark', Icons.dark_mode_rounded, ThemeMode.dark),
+            ])
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ListenableBuilder(
+                    listenable: themeController,
+                    builder: (_, _) {
+                      final on = themeController.value == mode;
+                      return GestureDetector(
+                        onTap: () => themeController.select(mode),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: on ? scheme.accent : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: on ? scheme.primary.withValues(alpha: .5) : scheme.border),
+                          ),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(icon, size: 15, color: on ? scheme.foreground : scheme.mutedForeground),
+                            const SizedBox(width: 6),
+                            Text(label, style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w500, color: on ? scheme.foreground : scheme.mutedForeground)),
+                          ]),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-
-              const SizedBox(height: 18),
-
-              // -------------------------------------------------- connection
-              _sectionTitle('Connection', scheme),
-              const SizedBox(height: 8),
-              ShadCard(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _label('API URL', scheme),
-                    const SizedBox(height: 7),
-                    ShadInput(
-                      controller: _endpoint,
-                      placeholder: const Text('https://markbase-api.you.workers.dev'),
-                      keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 16),
-                    _label('SYNC TOKEN', scheme),
-                    const SizedBox(height: 7),
-                    ShadInput(
-                      controller: _token,
-                      placeholder: const Text('mb_sync_…'),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 18),
-                    ShadButton(
-                      width: double.infinity,
-                      onPressed: testing ? null : _saveAndTest,
-                      leading: testing
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 1.8, color: Colors.white),
-                            )
-                          : const Icon(Icons.bolt_rounded, size: 16),
-                      child: Text(testing ? 'Testing…' : 'Save & test connection'),
-                    ),
-                    if (success != null) ...[
-                      const SizedBox(height: 14),
-                      ShadAlert(
-                        icon: const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
-                        description: Text(success!),
-                      ),
-                    ],
-                    if (failure != null) ...[
-                      const SizedBox(height: 14),
-                      ShadAlert.destructive(
-                        icon: Icon(Icons.error_rounded, size: 16, color: scheme.destructive),
-                        description: Text(failure!),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-              ShadCard(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lock_rounded, size: 16, color: scheme.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'One token, one private space. The same URL and token go into the Chrome extension — '
-                        'only your devices can read this list.',
-                        style: GoogleFonts.inter(fontSize: 12.5, height: 1.6, color: scheme.mutedForeground),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _sectionTitle(String text, ShadColorScheme scheme) => Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Text(
-          text.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: .1,
-            color: scheme.mutedForeground,
-          ),
-        ),
-      );
-
-  Widget _themeChip(String label, IconData icon, ThemeMode mode, ShadColorScheme scheme) {
-    final on = themeController.value == mode;
-    return Expanded(
-      child: ShadButton.outline(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        backgroundColor: on ? scheme.accent : scheme.card,
-        hoverBackgroundColor: on ? scheme.accent : scheme.muted,
-        foregroundColor: on ? scheme.accentForeground : scheme.mutedForeground,
-        hoverForegroundColor: on ? scheme.accentForeground : scheme.foreground,
-        leading: Icon(icon, size: 15),
-        onPressed: () => themeController.select(mode),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(fontSize: 12, fontWeight: on ? FontWeight.w700 : FontWeight.w600),
-        ),
+          ])),
+          section('About'),
+          card(Text(
+            'Bookmarks sync when your browser opens and every 15 minutes. Pages you read in the extension are kept for 60 days and searchable by content.',
+            style: GoogleFonts.inter(fontSize: 12.5, height: 1.55, color: scheme.mutedForeground),
+          )),
+        ],
       ),
     );
   }
-
-  Widget _label(String text, ShadColorScheme scheme) => Text(
-        text,
-        style: GoogleFonts.inter(
-            fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .09, color: scheme.mutedForeground),
-      );
 }

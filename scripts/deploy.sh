@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# MarkBase — one-shot deploy to Cloudflare.
+# MarkBase - one-shot deploy to Cloudflare.
 # Usage:  ./scripts/deploy.sh          (deploy worker + dashboard)
 #         ./scripts/deploy.sh --fresh  (also apply D1 schema after deploy)
 set -euo pipefail
+"$(dirname "$0")/build_web.sh"
 cd "$(dirname "$0")/../api"
 
 if ! npx wrangler whoami >/dev/null 2>&1; then
@@ -19,4 +20,4 @@ if [[ "${1:-}" == "--fresh" ]]; then
 fi
 
 URL=$(npx wrangler deployments list 2>/dev/null | grep -o 'https://markbase-api[^ ]*workers.dev' | head -1 || true)
-echo "✅ Done — API:  https://markbase-api.spreadsheets600.workers.dev  (dashboard at /)"
+echo "✅ Done - API:  https://markbase-api.spreadsheets600.workers.dev  (dashboard at /)"

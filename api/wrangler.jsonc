@@ -1,4 +1,4 @@
-// MarkBase API — Cloudflare Python Worker + D1 + static PWA assets
+// MarkBase API - Cloudflare Python Worker + D1 + static PWA assets
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "markbase-api",
@@ -6,6 +6,9 @@
   "compatibility_date": "2025-09-15",
   "compatibility_flags": ["python_workers"],
   "observability": { "enabled": true },
+  "vars": {
+    "GOOGLE_CLIENT_ID": "471983322621-0rjrhda67jsamkpbh0onjat0erotk9bk.apps.googleusercontent.com"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -16,6 +19,6 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "not_found_handling": "none"
+    "not_found_handling": "single-page-application"
   }
 }

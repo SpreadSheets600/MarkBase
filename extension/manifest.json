@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "MarkBase Sync",
-  "version": "1.1.0",
-  "description": "Keeps a live copy of your bookmarks synced to MarkBase — always watching, zero clicks.",
-  "permissions": ["bookmarks", "alarms", "storage"],
+  "version": "2.1.0",
+  "description": "Two-way bookmark sync across browsers and your phone, with searchable page contents.",
+  "permissions": ["bookmarks", "alarms", "storage", "tabs", "scripting"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
@@ -16,16 +16,29 @@
     "default_title": "MarkBase Sync",
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
+      "16":  "icons/icon16.png",
+      "32":  "icons/icon32.png",
+      "48":  "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
+    "16":  "icons/icon16.png",
+    "32":  "icons/icon32.png",
+    "48":  "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "https://*.workers.dev/*", "https://markbase.dev/*"],
+      "js": ["session-bridge.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["dwell.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": []
 }

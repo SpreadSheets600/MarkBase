@@ -1,25 +1,30 @@
 /* Full-page wrapper for the popup panel (chrome://extensions → options). */
-html, body { height: 100%; margin: 0; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 32px 16px;
-  background: #fbfbfc;
+  padding: 40px 16px;
+  background: #09090b;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
+  transition: background .15s ease;
 }
-html[data-theme="dark"] body { background: #0a0a0d; }
+html[data-theme="light"] body { background: #f4f4f5; }
 
 iframe {
-  width: 384px;
-  height: 620px;
-  border: 1px solid #e7e7ea;
+  width: 380px;
+  height: 640px;
+  border: 1px solid #27272a;
   border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 24px 60px -28px rgba(16, 16, 20, .35);
+  background: #09090b;
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .8);
 }
-html[data-theme="dark"] iframe {
-  border-color: #26262e;
-  background: #0e0e12;
-  box-shadow: 0 24px 60px -28px rgba(0, 0, 0, .8);
+html[data-theme="light"] iframe {
+  border-color: #e4e4e7;
+  background: #ffffff;
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .2);
 }

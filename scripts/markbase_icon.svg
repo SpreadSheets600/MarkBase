@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="50%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#1e1035" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background: Smooth rounded squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="120" fill="url(#bgGrad)"/>
+  <rect x="24" y="24" width="464" height="464" rx="120" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6"/>
+
+  <!-- One object: The iconic solid bookmark ribbon -->
+  <path d="M 178 126 H 334 A 24 24 0 0 1 358 150 V 382 L 256 322 L 154 382 V 150 A 24 24 0 0 1 178 126 Z" fill="#ffffff" filter="url(#shadow)"/>
+</svg>

@@ -17,3 +17,5 @@ CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- See migrations/002_two_way_sync.sql for columns/tables added in v2.1.

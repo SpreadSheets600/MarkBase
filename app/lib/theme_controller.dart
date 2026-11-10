@@ -16,7 +16,7 @@ class ThemeController extends ValueNotifier<ThemeMode> {
       final prefs = await SharedPreferences.getInstance();
       value = _decode(prefs.getString(_themeKey));
     } catch (_) {
-      value = ThemeMode.system;
+      value = ThemeMode.dark;
     }
   }
 
@@ -26,7 +26,7 @@ class ThemeController extends ValueNotifier<ThemeMode> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_themeKey, _encode(mode));
     } catch (_) {
-      /* storage unavailable — the in-memory value still applies */
+      /* storage unavailable - the in-memory value still applies */
     }
   }
 
@@ -37,7 +37,8 @@ class ThemeController extends ValueNotifier<ThemeMode> {
   static ThemeMode _decode(String? raw) => switch (raw) {
         'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.dark, // dark is the default look
       };
 
   static String _encode(ThemeMode mode) => switch (mode) {
@@ -48,4 +49,4 @@ class ThemeController extends ValueNotifier<ThemeMode> {
 }
 
 /// Initialised at startup; safe defaults keep widget tests working.
-final themeController = ThemeController(ThemeMode.system);
+final themeController = ThemeController(ThemeMode.dark);

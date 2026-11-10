@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MarkBase — first-time setup. Checks login, ensures DB schema + token, deploys.
+# MarkBase - first-time setup. Checks login, ensures DB schema + token, deploys.
 # Safe to re-run; skips what already exists.
 set -euo pipefail
 cd "$(dirname "$0")/../api"

@@ -2,7 +2,7 @@
   "name": "markbase-api",
   "version": "1.0.0",
   "private": true,
-  "description": "MarkBase — bookmark sync API on Cloudflare Workers (Python) + D1",
+  "description": "MarkBase - bookmark sync API on Cloudflare Workers (Python) + D1",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

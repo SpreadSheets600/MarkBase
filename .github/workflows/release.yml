@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-release:
+    name: Build & Release Artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Build Web Dashboard
+        run: |
+          cd web && npm ci && npm run build
+
+      - name: Build Chrome Extension
+        run: |
+          cd capture && npm ci && cd ..
+          bash scripts/build_extension.sh
+
+      - name: Build Flutter Web & APK
+        run: |
+          cd app
+          flutter pub get
+          flutter build web --release --base-href=/app/
+          flutter build apk --release || echo "APK build skipped (requires Android keystore configuration)"
+
+      - name: Package Flutter Web
+        run: |
+          cd app/build/web && zip -r ../../../dist/markbase-flutter-web.zip . && cd ../../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            app/build/app/outputs/flutter-apk/*.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
