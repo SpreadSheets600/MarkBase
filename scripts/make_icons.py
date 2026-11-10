@@ -38,17 +38,16 @@ def render(size, out_path):
     print(f"✓ {os.path.relpath(out_path, BASE_DIR)} ({size}x{size})")
 
 
-# Chrome Extension icons
 for sz in (16, 32, 48, 128):
     render(sz, os.path.join(BASE_DIR, "extension", "icons", f"icon{sz}.png"))
 
-# Web App & PWA icons
+
 for sz in (192, 512):
     render(sz, os.path.join(BASE_DIR, "api", "public", "icons", f"icon{sz}.png"))
 render(32, os.path.join(BASE_DIR, "api", "public", "favicon.png"))
 render(180, os.path.join(BASE_DIR, "api", "public", "apple-touch-icon.png"))
 
-# Create .ico Multi-Resolution Favicon Using ImageMagick
+
 subprocess.run(
     [
         "magick",
@@ -61,7 +60,7 @@ subprocess.run(
 )
 print("api/public/favicon.ico")
 
-# Flutter Web icons
+
 render(32, os.path.join(BASE_DIR, "app", "web", "favicon.png"))
 for sz in (192, 512):
     render(sz, os.path.join(BASE_DIR, "app", "web", "icons", f"Icon-{sz}.png"))
@@ -81,7 +80,7 @@ if os.path.exists(os.path.join(BASE_DIR, "api", "public", "app")):
             ),
         )
 
-# Android App launcher icons
+
 android_res = os.path.join(BASE_DIR, "app", "android", "app", "src", "main", "res")
 android_densities = {
     "mipmap-mdpi": 48,
