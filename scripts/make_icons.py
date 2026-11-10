@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-"""
-MarkBase Icon Generator
-Creates the official MarkBase icon:
-- Background: A modern squircle with a rich violet-to-indigo gradient.
-- Foreground: A single solid, beautifully proportioned bookmark ribbon.
-Renders to all sizes and formats required across the Extension, Web App, PWA, and Mobile/Desktop Flutter app.
-"""
-
 import os
 import subprocess
 
@@ -37,45 +28,60 @@ SVG_CONTENT = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" w
 with open(SVG_PATH, "w") as f:
     f.write(SVG_CONTENT)
 
+
 def render(size, out_path):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    subprocess.run(["rsvg-convert", "-w", str(size), "-h", str(size), SVG_PATH, "-o", out_path], check=True)
+    subprocess.run(
+        ["rsvg-convert", "-w", str(size), "-h", str(size), SVG_PATH, "-o", out_path],
+        check=True,
+    )
     print(f"✓ {os.path.relpath(out_path, BASE_DIR)} ({size}x{size})")
 
-# 1. Chrome Extension icons
+
+# Chrome Extension icons
 for sz in (16, 32, 48, 128):
     render(sz, os.path.join(BASE_DIR, "extension", "icons", f"icon{sz}.png"))
 
-# 2. Web App & PWA icons
+# Web App & PWA icons
 for sz in (192, 512):
     render(sz, os.path.join(BASE_DIR, "api", "public", "icons", f"icon{sz}.png"))
 render(32, os.path.join(BASE_DIR, "api", "public", "favicon.png"))
 render(180, os.path.join(BASE_DIR, "api", "public", "apple-touch-icon.png"))
 
-# Create .ico multi-resolution favicon using ImageMagick
-subprocess.run([
-    "magick",
-    os.path.join(BASE_DIR, "extension", "icons", "icon16.png"),
-    os.path.join(BASE_DIR, "extension", "icons", "icon32.png"),
-    os.path.join(BASE_DIR, "extension", "icons", "icon48.png"),
-    os.path.join(BASE_DIR, "api", "public", "favicon.ico")
-], check=True)
-print("✓ api/public/favicon.ico")
+# Create .ico Multi-Resolution Favicon Using ImageMagick
+subprocess.run(
+    [
+        "magick",
+        os.path.join(BASE_DIR, "extension", "icons", "icon16.png"),
+        os.path.join(BASE_DIR, "extension", "icons", "icon32.png"),
+        os.path.join(BASE_DIR, "extension", "icons", "icon48.png"),
+        os.path.join(BASE_DIR, "api", "public", "favicon.ico"),
+    ],
+    check=True,
+)
+print("api/public/favicon.ico")
 
-# 3. Flutter Web icons
+# Flutter Web icons
 render(32, os.path.join(BASE_DIR, "app", "web", "favicon.png"))
 for sz in (192, 512):
     render(sz, os.path.join(BASE_DIR, "app", "web", "icons", f"Icon-{sz}.png"))
     render(sz, os.path.join(BASE_DIR, "app", "web", "icons", f"Icon-maskable-{sz}.png"))
 
-# Copy to api/public/app/web if it exists
 if os.path.exists(os.path.join(BASE_DIR, "api", "public", "app")):
     render(32, os.path.join(BASE_DIR, "api", "public", "app", "favicon.png"))
     for sz in (192, 512):
-        render(sz, os.path.join(BASE_DIR, "api", "public", "app", "icons", f"Icon-{sz}.png"))
-        render(sz, os.path.join(BASE_DIR, "api", "public", "app", "icons", f"Icon-maskable-{sz}.png"))
+        render(
+            sz,
+            os.path.join(BASE_DIR, "api", "public", "app", "icons", f"Icon-{sz}.png"),
+        )
+        render(
+            sz,
+            os.path.join(
+                BASE_DIR, "api", "public", "app", "icons", f"Icon-maskable-{sz}.png"
+            ),
+        )
 
-# 4. Android App launcher icons
+# Android App launcher icons
 android_res = os.path.join(BASE_DIR, "app", "android", "app", "src", "main", "res")
 android_densities = {
     "mipmap-mdpi": 48,
@@ -87,4 +93,4 @@ android_densities = {
 for folder, sz in android_densities.items():
     render(sz, os.path.join(android_res, folder, "ic_launcher.png"))
 
-print("\n🎉 MarkBase icons successfully generated and deployed everywhere!")
+print("\nMarkBase Icons Generated And Deployed!")
