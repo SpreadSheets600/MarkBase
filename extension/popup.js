@@ -55,22 +55,15 @@ function triggerSync() {
 async function topFolders() {
   const tree = await chrome.bookmarks.getTree();
   const out = [];
-  const walk = (nodes, parts, depth) => {
-    for (const n of nodes) {
-      if (n.url) continue;
-      if (!Array.isArray(n.children)) continue;
-      if (depth > 1) continue;
-      const name = depth === 0 ? "" : (n.title || "").trim();
-      const path = depth === 0 ? [] : [...parts, name];
-      // count urls in this subtree
-      let count = 0;
-      const countAll = (kids) => kids.forEach((k) => k.url ? count++ : Array.isArray(k.children) && countAll(k.children));
-      countAll(n.children);
-      if (count > 0) out.push({ path: path.join(" / "), label: path.slice(-2).join(" · "), count });
-      walk(n.children, path, depth + 1);
+  const countAll = (kids) => (kids || []).reduce((n, k) => n + (k.url ? 1 : countAll(k.children)), 0);
+  const root = tree[0];
+  for (const rootFolder of root?.children || []) {
+    for (const child of rootFolder.children || []) {
+      if (child.url) continue; // root-level loose bookmarks aren't folders
+      const count = countAll(child.children || []);
+      if (count > 0) out.push({ path: `${rootFolder.title} / ${child.title}`, label: child.title, count });
     }
-  };
-  walk(tree, [], 0);
+  }
   return out;
 }
 
