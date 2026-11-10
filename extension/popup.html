@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MarkBase Sync</title>
+  <link rel="stylesheet" href="pico.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="popup">
+    <header class="brand">
+      <span class="logo">M</span>
+      <div>
+        <h1>MarkBase</h1>
+        <p>live bookmark sync</p>
+      </div>
+      <span id="pulse" class="pulse" title="status"></span>
+    </header>
+
+    <section class="status-card" id="statusCard">
+      <div class="row">
+        <span class="label">Status</span>
+        <strong id="statusText">…</strong>
+      </div>
+      <div class="row">
+        <span class="label">Bookmarks synced</span>
+        <strong id="countText">—</strong>
+      </div>
+      <div class="row">
+        <span class="label">Last sync</span>
+        <strong id="lastText">—</strong>
+      </div>
+      <p id="errorText" class="error" hidden></p>
+    </section>
+
+    <button id="syncNow" class="primary full">Sync now</button>
+    <button id="openDash" class="outline full secondary">Open dashboard ↗</button>
+
+    <details class="settings">
+      <summary>⚙️ Settings</summary>
+      <label for="endpoint">MarkBase API URL</label>
+      <input id="endpoint" type="url" placeholder="https://markbase-api.<you>.workers.dev" autocomplete="off" spellcheck="false" />
+      <label for="token">Sync token</label>
+      <input id="token" type="password" placeholder="paste your SYNC_TOKEN" autocomplete="off" />
+      <button id="save" class="primary full">Save</button>
+      <p id="saveMsg" class="ok-msg" hidden>Saved ✓</p>
+    </details>
+
+    <footer>
+      <span id="apiHint" class="hint"></span>
+    </footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

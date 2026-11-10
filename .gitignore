@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+.venv/
+
+# Node
+node_modules/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+build/
+.flutter-plugins*
+.dart_tool/
+android/.gradle/
+ios/Pods/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Generated secrets & local artifacts
+.env
+*.log
+.vercel
+.wrangler/
+dist/

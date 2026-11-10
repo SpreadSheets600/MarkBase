@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MarkBase · Your bookmarks, everywhere</title>
+  <meta name="description" content="MarkBase — a live copy of your browser bookmarks, on every device." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon192.png" type="image/png" />
+  <meta name="theme-color" content="#0b0b14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="vendor/bootstrap.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- aurora backdrop -->
+  <div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+  <header class="glass-nav">
+    <div class="container d-flex align-items-center gap-2 py-2">
+      <span class="logo">M</span>
+      <div class="me-auto">
+        <div class="fw-bold lh-1">MarkBase</div>
+        <div class="tiny opacity-50">your bookmarks, everywhere</div>
+      </div>
+      <button id="searchToggle" class="btn btn-ghost btn-sm d-md-none" aria-label="Search">🔍</button>
+      <span id="countBadge" class="badge-pill" hidden></span>
+      <button id="refreshBtn" class="btn btn-ghost btn-sm" title="Refresh">⟳</button>
+      <button id="lockBtn" class="btn btn-ghost btn-sm" title="Change token">🔒</button>
+    </div>
+    <div class="container search-wrap" id="searchWrap">
+      <input id="search" class="form-control search" type="search" placeholder="Search bookmarks…" autocomplete="off" />
+    </div>
+  </header>
+
+  <main class="container content">
+    <section id="gate" class="glass-card gate">
+      <h1 class="display-title">Welcome to MarkBase ✨</h1>
+      <p class="opacity-75">Paste your sync token once — this device remembers it.</p>
+      <input id="tokenInput" class="form-control mb-2" type="password" placeholder="SYNC_TOKEN" autocomplete="off" />
+      <button id="gateBtn" class="btn btn-gradient w-100">Unlock my bookmarks →</button>
+      <p id="gateError" class="text-danger small mt-2 mb-0" hidden></p>
+    </section>
+
+    <section id="app" hidden>
+      <div id="stats" class="stats-row"></div>
+      <div id="folders" class="folder-chips"></div>
+      <div id="list"></div>
+      <div id="empty" class="glass-card empty" hidden>
+        <div class="big">🙂</div>
+        <div class="fw-semibold">No bookmarks here yet</div>
+        <p class="opacity-60 mb-0 small">Add bookmarks in your browser — the extension pushes them here automatically.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
