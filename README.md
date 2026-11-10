@@ -157,6 +157,24 @@ Workflows are configured under [`.github/workflows/`](.github/workflows/):
 
 ---
 
+## Git Commit Convention
+
+All commits in MarkBase follow the [Conventional Commits specification](https://www.conventionalcommits.org/):
+
+| Type | Purpose |
+|------|---------|
+| `feat:` | A new feature or major capability |
+| `fix:` | A bug fix or defect resolution |
+| `docs:` | Documentation changes only |
+| `style:` | Formatting, whitespace, or visual polish (no logic change) |
+| `refactor:` | Code restructuring that neither fixes a bug nor adds a feature |
+| `perf:` | Performance improvements |
+| `test:` | Adding or correcting unit/widget/integration tests |
+| `ci:` | GitHub Actions workflow, runner, or build configuration changes |
+| `chore:` | Dependency bumps, maintenance, or tooling adjustments |
+
+---
+
 ## License
 
 MIT License. Designed and crafted for private, stateless, dependable bookmark and reading synchronization.
